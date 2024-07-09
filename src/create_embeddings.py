@@ -75,5 +75,5 @@ print(f"SBERT model device: {next(model.parameters()).device}")
 documents = load_and_preprocess_text_files('../data/paper_files')
 
 # Save documents with embeddings to a JSON file
-with open('../data/cleaned_indexed_documents.json', 'w') as f:
+with open('../data/cleaned_indexed_documents_pretrained.json', 'w') as f:
     json.dump(documents, f)
