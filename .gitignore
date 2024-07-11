@@ -1,3 +1,4 @@
-data/
+data/*
+!data/readme.txt
 src/outputs
 src/wandb
