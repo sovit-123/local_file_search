@@ -25,13 +25,14 @@ from sentence_transformers import SentenceTransformer
 from tqdm.auto import tqdm
 
 # Load SBERT model
-model = SentenceTransformer('all-MiniLM-L6-v2')
-# model = SentenceTransformer('outputs/checkpoint-12500')
+model_id = 'all-MiniLM-L6-v2'
+# model_id = 'outputs/checkpoint-12500' # Or any other custom model path.
+model = SentenceTransformer(model_id)
 # Device setup (not needed for SentenceTransformer as it handles it internally)
 device = model.device
 print(device)
 
-# -1 = all files
+# -1 = embed all files
 total_files_to_embed = -1
 
 def extract_features(text):
@@ -76,8 +77,5 @@ def load_and_preprocess_text_files(directory):
 documents = load_and_preprocess_text_files('../data/paper_files')
 
 # Save documents with embeddings to a JSON file
-# with open('../data/indexed_documents_finetuned.json', 'w') as f:
-#     json.dump(documents, f)
-
 with open('../data/indexed_documents_pretrained.json', 'w') as f:
     json.dump(documents, f)

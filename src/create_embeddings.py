@@ -79,7 +79,9 @@ def load_and_preprocess_text_files(directory, filename):
     return None
 
 # Load SBERT model
-model = SentenceTransformer('all-MiniLM-L6-v2').to(device)
+model_id = 'all-MiniLM-L6-v2'
+# model_id = 'outputs/checkpoint-12500' # Or any other custom model path.
+model = SentenceTransformer(model_id).to(device)
 print(f"SBERT model device: {next(model.parameters()).device}")
 
 directory = '../data/paper_files'
