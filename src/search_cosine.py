@@ -3,8 +3,19 @@ Search based on cosine similarity.
 """
 
 import json
+import argparse
+
 from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    '--index-file',
+    dest='index_file',
+    required=True,
+    help='path to an indexed embedding JSON file'
+)
+args = parser.parse_args()
 
 # Load SBERT model
 model = SentenceTransformer('all-MiniLM-L6-v2')
@@ -40,7 +51,7 @@ def main():
     # File paths
     # documents_file_path = '../data/indexed_documents_finetuned.json'
     # documents_file_path = '../data/indexed_documents_pretrained.json'
-    documents_file_path = '../data/cleaned_indexed_documents_multiprocessing_pretrained.json'
+    documents_file_path = args.index_file
 
     # Load documents.
     documents = load_documents(documents_file_path)

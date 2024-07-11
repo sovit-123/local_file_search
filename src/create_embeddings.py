@@ -13,6 +13,14 @@ the same operation takes around 8 minutes.
 Spoiler: The majority of the time is consumed by clean up of the documents
 done using Spacy.
 
+FURTHER NOTE:
+Recommended to use this script to create embeddings rather than 
+`create_embeddings_no_cleaning.py`. This cleans up useless spaces and 
+numbers which creates a more meaningful and compact embedding. The results
+for simple phrases will be more or less the same. However, for complex
+queries, the embeddings from this script will generate better answers.
+
+
 Requirements:
 $ pip install spacy
 $ python -m spacy download en_core_web_sm
