@@ -40,7 +40,7 @@ def main():
     # File paths
     # documents_file_path = '../data/indexed_documents_finetuned.json'
     # documents_file_path = '../data/indexed_documents_pretrained.json'
-    documents_file_path = '../data/cleaned_indexed_documents.json'
+    documents_file_path = '../data/cleaned_indexed_documents_multiprocessing_pretrained.json'
 
     # Load documents.
     documents = load_documents(documents_file_path)

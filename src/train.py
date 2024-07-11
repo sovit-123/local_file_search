@@ -1,3 +1,7 @@
+"""
+Training a Sentence Transformer model.
+"""
+
 import os
 
 from sentence_transformers import SentenceTransformer, losses, SentenceTransformerTrainer
@@ -37,8 +41,16 @@ model.max_seq_length = 512
 
 print(model)
 
-train_dataloader = ContrastiveTensionDataLoader(train_texts, batch_size=16, pos_neg_ratio=4)
-valid_dataloader = ContrastiveTensionDataLoader(valid_texts, batch_size=16, pos_neg_ratio=4)
+train_dataloader = ContrastiveTensionDataLoader(
+    train_texts, 
+    batch_size=16, 
+    pos_neg_ratio=4
+)
+valid_dataloader = ContrastiveTensionDataLoader(
+    valid_texts, 
+    batch_size=16, 
+    pos_neg_ratio=4
+)
 
 loss = losses.ContrastiveTensionLoss(model=model)
 
