@@ -2,7 +2,7 @@
 
 Scripts to replicate simple file search in a directory with embeddings.
 
-This is an oversimplified process just to semantically search the file names that may contain the search query. ***No VectorDB, No LLMs***.
+This is an oversimplified process just to semantically search the file names that may contain the search query. ***No VectorDB, No LLMs (yet)***.
 
 A simplified use case: You have thousands of research papers but don't know which are the ones containing content that you want. You do a search according to a rough query and get an adequately good results.
 
