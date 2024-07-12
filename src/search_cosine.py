@@ -1,5 +1,8 @@
 """
 Search based on cosine similarity.
+
+USAGE:
+$ python search_cosine.py --index-file <path/to/index.json file>
 """
 
 import json
@@ -41,6 +44,30 @@ def search(query, documents, top_k=5):
     scores.sort(key=lambda x: x[1], reverse=True)
     return scores[:top_k]
 
+def chunk_text(text, chunk_size=100, overlap=50):
+    """Chunk the text into overlapping windows."""
+    words = text.split()
+    chunks = []
+    for i in range(0, len(words), chunk_size - overlap):
+        chunk = ' '.join(words[i:i + chunk_size])
+        chunks.append(chunk)
+        if i + chunk_size >= len(words):
+            break
+    return chunks
+
+def extract_relevant_part(query, content, chunk_size=256, overlap=50):
+    """Extract the part of the content that is most relevant to the query."""
+    chunks = chunk_text(content, chunk_size, overlap)
+    if not chunks:
+        return content  # Return full content if it can't be split
+
+    chunk_embeddings = model.encode(chunks)
+    query_embedding = extract_features(query)
+    scores = cosine_similarity([query_embedding], chunk_embeddings).flatten()
+    best_chunk_idx = scores.argmax()
+    return chunks[best_chunk_idx]
+
+
 def load_documents(file_path):
     """Load preprocessed documents and embeddings from a JSON file."""
     with open(file_path, 'r') as f:
@@ -62,8 +89,10 @@ def main():
     # Perform search
     results = search(query, documents)
     for result in results:
+        document = result[0]
         print(f"Filename: {result[0]['filename']}, Score: {result[1]}")
-        # print(f"Content: {result[0]['content'][:500]}...\n")
+        relevant_part = extract_relevant_part(query, document['content'])
+        print(f"Relevant part: {relevant_part}\n")
 
 if __name__ == "__main__":
     main()

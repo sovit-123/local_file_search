@@ -21,8 +21,25 @@ This script creates embeddings for text files in a directory and stores them in 
 
 import os
 import json
+import argparse
+
 from sentence_transformers import SentenceTransformer
 from tqdm.auto import tqdm
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    '--add-file-content',
+    dest='add_file_content',
+    action='store_true',
+    help='whether to store the file content in the final index file or not'
+)
+parser.add_argument(
+    '--index-file-name',
+    dest='index_file_name',
+    help='file name for the index JSON file',
+    required=True
+)
+args = parser.parse_args()
 
 # Load SBERT model
 model_id = 'all-MiniLM-L6-v2'
@@ -70,12 +87,15 @@ def load_and_preprocess_text_files(directory):
             with open(os.path.join(directory, filename), 'r', errors='ignore') as file:
                 content = file.read()
                 features = extract_features(content).tolist()
-                documents.append({'filename': filename, 'features': features})
+                if args.add_file_content:
+                    documents.append({'filename': filename, 'content': content, 'features': features})
+                else:
+                    documents.append({'filename': filename, 'features': features})
     return documents
 
 # Example usage
 documents = load_and_preprocess_text_files('../data/paper_files')
 
 # Save documents with embeddings to a JSON file
-with open('../data/indexed_documents_pretrained.json', 'w') as f:
+with open(os.path.join('..', 'data', args.index_file_name), 'w') as f:
     json.dump(documents, f)

@@ -33,13 +33,29 @@ import os
 import spacy
 import torch
 import json
+import argparse
 
 from sentence_transformers import SentenceTransformer
 from tqdm.auto import tqdm
 from joblib import Parallel, delayed
 
-device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-# device = 'cpu'
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    '--add-file-content',
+    dest='add_file_content',
+    action='store_true',
+    help='whether to store the file content in the final index file or not'
+)
+parser.add_argument(
+    '--index-file-name',
+    dest='index_file_name',
+    help='file name for the index JSON file',
+    required=True
+)
+args = parser.parse_args()
+
+# device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+device = 'cpu'
 print(device)
 
 # -1 = embed all files
@@ -82,8 +98,11 @@ def load_and_preprocess_text_files(directory, filename):
             content = file.read()
             preprocessed_content = preprocess_text(content)
             features = extract_features(preprocessed_content).tolist()
-            # documents.append({'filename': filename, 'content': content, 'preprocessed_content': preprocessed_content})
-            return {'filename': filename, 'features': features}
+            if args.add_file_content:
+                return {'filename': filename, 'content': content, 'features': features}
+            else:
+                return {'filename': filename, 'features': features}
+            
     return None
 
 # Load SBERT model
@@ -109,5 +128,5 @@ results = Parallel(n_jobs=16, backend='multiprocessing')(
 documents = [result for result in results if result is not None]
 
 # Save documents with embeddings to a JSON file
-with open('../data/cleaned_indexed_documents_multiprocessing_pretrained.json', 'w') as f:
+with open(os.path.join('..', 'data', args.index_file_name), 'w') as f:
     json.dump(documents, f)
