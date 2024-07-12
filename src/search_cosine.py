@@ -18,6 +18,13 @@ parser.add_argument(
     required=True,
     help='path to an indexed embedding JSON file'
 )
+parser.add_argument(
+    '--extract-content',
+    dest='extract_content',
+    action='store_true',
+    help='whether to print the related content or not \
+          as the index file does not always contain file content'
+)
 args = parser.parse_args()
 
 # Load SBERT model
@@ -75,9 +82,6 @@ def load_documents(file_path):
     return documents
 
 def main():
-    # File paths
-    # documents_file_path = '../data/indexed_documents_finetuned.json'
-    # documents_file_path = '../data/indexed_documents_pretrained.json'
     documents_file_path = args.index_file
 
     # Load documents.
@@ -91,8 +95,19 @@ def main():
     for result in results:
         document = result[0]
         print(f"Filename: {result[0]['filename']}, Score: {result[1]}")
-        relevant_part = extract_relevant_part(query, document['content'])
-        print(f"Relevant part: {relevant_part}\n")
+        # Search for relevevant content if `--extract-content` is passed.
+        if args.extract_content:
+            try:
+                document['content']
+            except:
+                raise AssertionError(f"It looks like you have passed "
+                f"`--extract-content` but the document does not contain "
+                f"original file content. Please check again... "
+                f"Either create a new index file with the file content or "
+                f"remove `--extract-content` while executing the search script"
+                )
+            relevant_part = extract_relevant_part(query, document['content'])
+            print(f"Relevant part: {relevant_part}\n")
 
 if __name__ == "__main__":
     main()
