@@ -6,6 +6,16 @@ This is an oversimplified process just to semantically search the file names tha
 
 A simplified use case: You have thousands of research papers but don't know which are the ones containing content that you want. You do a search according to a rough query and get an adequately good results.
 
+## Setup
+
+Run the following in terminal in your preferred virtual/conda environment.
+
+```
+sh setup.sh
+```
+
+It will install the the requirements from the `requirements.txt` file and download the Spacy model.
+
 ## Steps to Run
 
 * Download the `papers.csv` file from [here](https://www.kaggle.com/datasets/benhamner/nips-papers?select=papers.csv) and keep in the `data` directory.
