@@ -80,9 +80,10 @@ def encode_document(
 ):
     """Encode the document in chunks."""
     chunks = chunk_text(content, chunk_size, overlap)
-    if not chunks:
+
+    if not chunks:  # If no chunks are possible.
         features = extract_features(content).tolist()
-        if args.add_file_content:
+        if add_file_content: # If original file content to be added.
             documents.append({
                 'filename': filename, 
                 'chunk': 0, 
@@ -99,7 +100,7 @@ def encode_document(
     else:
         for i, chunk in enumerate(chunks):
             features = extract_features(chunk).tolist()
-            if args.add_file_content:
+            if add_file_content: # If original file content to be added.
                 documents.append({
                     'filename': filename, 
                     'chunk': i, 
@@ -138,7 +139,6 @@ def load_and_preprocess_text_files(directory):
             with open(os.path.join(directory, filename), 'r', errors='ignore') as file:
                 content = file.read()
 
-                chunks = chunk_text(content, chunk_size=512, overlap=50)
                 documents = encode_document(
                     filename, 
                     documents, 
