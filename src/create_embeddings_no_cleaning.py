@@ -64,6 +64,57 @@ def extract_features(text):
     embeddings = model.encode(text)
     return embeddings
 
+def chunk_text(text, chunk_size=512, overlap=50):
+    """Chunk the text into overlapping windows."""
+    words = text.split()
+    chunks = []
+    for i in range(0, len(words), chunk_size - overlap):
+        chunk = ' '.join(words[i:i + chunk_size])
+        chunks.append(chunk)
+        if i + chunk_size >= len(words):
+            break
+    return chunks
+
+def encode_document(
+    filename, documents, add_file_content, content, chunk_size=512, overlap=50
+):
+    """Encode the document in chunks."""
+    chunks = chunk_text(content, chunk_size, overlap)
+    if not chunks:
+        features = extract_features(content).tolist()
+        if args.add_file_content:
+            documents.append({
+                'filename': filename, 
+                'chunk': 0, 
+                'content': content, 
+                'features': features
+            })
+        else:
+            documents.append({
+                'filename': filename, 
+                'chunk': 0, 
+                'features': features
+            })
+
+    else:
+        for i, chunk in enumerate(chunks):
+            features = extract_features(chunk).tolist()
+            if args.add_file_content:
+                documents.append({
+                    'filename': filename, 
+                    'chunk': i, 
+                    'content': chunk, 
+                    'features': features
+                })
+            else:
+                documents.append({
+                    'filename': filename, 
+                    'chunk': i, 
+                    'features': features
+                })
+
+    return documents
+
 def load_and_preprocess_text_files(directory):
     """
     Loads and preprocesses text files in a directory.
@@ -86,11 +137,17 @@ def load_and_preprocess_text_files(directory):
         if filename.endswith(".txt"):
             with open(os.path.join(directory, filename), 'r', errors='ignore') as file:
                 content = file.read()
-                features = extract_features(content).tolist()
-                if args.add_file_content:
-                    documents.append({'filename': filename, 'content': content, 'features': features})
-                else:
-                    documents.append({'filename': filename, 'features': features})
+
+                chunks = chunk_text(content, chunk_size=512, overlap=50)
+                documents = encode_document(
+                    filename, 
+                    documents, 
+                    args.add_file_content, 
+                    content, 
+                    chunk_size=512,
+                    overlap=50 
+                )
+                
     return documents
 
 # Example usage

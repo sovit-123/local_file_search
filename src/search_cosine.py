@@ -10,6 +10,7 @@ import argparse
 
 from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
+from tqdm import tqdm
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -43,9 +44,10 @@ def process_query(query):
 
 def search(query, documents, top_k=5):
     """Search for the most relevant documents to the query."""
+    print('SEARCHING...')
     query_features = process_query(query)
     scores = []
-    for document in documents:
+    for document in tqdm(documents, total=len(documents)):
         score = cosine_similarity([query_features], [document['features']])[0][0]
         scores.append((document, score))
     scores.sort(key=lambda x: x[1], reverse=True)
@@ -106,7 +108,13 @@ def main():
                 f"Either create a new index file with the file content or "
                 f"remove `--extract-content` while executing the search script"
                 )
+            
             relevant_part = extract_relevant_part(query, document['content'])
+            # Few color modifications to make the output more legible.
+            if query in relevant_part:
+                RED = "\033[31m"
+                RESET = "\033[0m"
+                relevant_part = relevant_part.replace(query, f"{RED}{query}{RESET}")
             print(f"Relevant part: {relevant_part}\n")
 
 if __name__ == "__main__":
