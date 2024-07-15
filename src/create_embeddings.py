@@ -66,19 +66,14 @@ if device == 'cuda' or device == 'cuda:0':
     spacy.prefer_gpu()
 nlp = spacy.load('en_core_web_sm')
 
-# To store the document embeddings.
-documents = []
-
 def preprocess_text(text):
     doc = nlp(text)
     tokens = [
         token.text for token in doc if \
-        # not token.is_stop \
-        # and not token.is_punct \
         not token.is_space \
-        and not token.is_digit
     ]
-    return ' '.join(tokens)
+    processed_text = ' '.join(tokens)
+    return processed_text
 
 def extract_features(text):
     """
@@ -92,41 +87,110 @@ def extract_features(text):
     embeddings = model.encode(text)
     return embeddings
 
-def load_and_preprocess_text_files(directory, filename):
-    if filename.endswith(".txt"):
+def chunk_text(text, chunk_size=512, overlap=50):
+    """Chunk the text into overlapping windows."""
+    words = text.split()
+    chunks = []
+    for i in range(0, len(words), chunk_size - overlap):
+        chunk = ' '.join(words[i:i + chunk_size])
+        chunks.append(chunk)
+        if i + chunk_size >= len(words):
+            break
+    return chunks
+
+def encode_document(
+    filename, 
+    documents,
+    add_file_content, 
+    content,
+    preprocessed_content, 
+    chunk_size=512, 
+    overlap=50
+):
+    """Encode the document in chunks."""
+    chunks = chunk_text(preprocessed_content, chunk_size, overlap)
+
+    if not chunks: # If no chunks are possible.
+        features = extract_features(preprocessed_content).tolist()
+        if add_file_content: # If original file content to be added.
+            documents.append({
+                'filename': filename, 
+                'chunk': 0, 
+                'content': content, 
+                'features': features
+            })
+        else:
+            documents.append({
+                'filename': filename, 
+                'chunk': 0, 
+                'features': features
+            })
+
+    else:
+        for i, chunk in enumerate(chunks):
+            features = extract_features(chunk).tolist()
+            if add_file_content: # If original file content to be added.
+                documents.append({
+                    'filename': filename, 
+                    'chunk': i, 
+                    'content': chunk, 
+                    'features': features
+                })
+            else:
+                documents.append({
+                    'filename': filename, 
+                    'chunk': i, 
+                    'features': features
+                })
+
+    return documents
+
+def load_and_preprocess_text_files(directory, filename, documents):
+    if filename.endswith('.txt'):
         with open(os.path.join(directory, filename), 'r', errors='ignore') as file:
             content = file.read()
             preprocessed_content = preprocess_text(content)
-            features = extract_features(preprocessed_content).tolist()
-            if args.add_file_content:
-                return {'filename': filename, 'content': content, 'features': features}
-            else:
-                return {'filename': filename, 'features': features}
+            # print(len(preprocessed_content), len(content))
+            # print(preprocessed_content)
+            documents = encode_document(
+                filename, 
+                documents,
+                args.add_file_content, 
+                content, 
+                preprocessed_content,
+                chunk_size=512,
+                overlap=50 
+            )
+            return documents
             
     return None
 
-# Load SBERT model
-model_id = 'all-MiniLM-L6-v2'
-# model_id = 'outputs/checkpoint-12500' # Or any other custom model path.
-model = SentenceTransformer(model_id).to(device)
-print(f"SBERT model device: {next(model.parameters()).device}")
+if __name__ == '__main__':
+    results = []
 
-directory = '../data/paper_files'
-all_files = os.listdir(directory)
-all_files.sort()
-if total_files_to_embed > -1:
-    files_to_embed = all_files[:total_files_to_embed]
-else: 
-    files_to_embed = all_files
-
-results = Parallel(n_jobs=16, backend='multiprocessing')(
-    delayed(load_and_preprocess_text_files)(directory, filename) \
-        for filename in tqdm(files_to_embed, total=len(files_to_embed))
-)
-
-# Filter out None values
-documents = [result for result in results if result is not None]
-
-# Save documents with embeddings to a JSON file
-with open(os.path.join('..', 'data', args.index_file_name), 'w') as f:
-    json.dump(documents, f)
+    # Load SBERT model
+    model_id = 'all-MiniLM-L6-v2'
+    # model_id = 'outputs/checkpoint-12500' # Or any other custom model path.
+    model = SentenceTransformer(model_id).to(device)
+    print(f"SBERT model device: {next(model.parameters()).device}")
+    
+    directory = '../data/paper_files'
+    all_files = os.listdir(directory)
+    all_files.sort()
+    if total_files_to_embed > -1:
+        files_to_embed = all_files[:total_files_to_embed]
+    else: 
+        files_to_embed = all_files
+    
+    results = Parallel(
+        n_jobs=16, 
+        backend='multiprocessing'
+    )(delayed(load_and_preprocess_text_files)(directory, filename, results) \
+            for filename in tqdm(files_to_embed, total=len(files_to_embed))
+        )
+    
+    documents = [res for result in results for res in result]
+    
+    # Save documents with embeddings to a JSON file
+    with open(os.path.join('..', 'data', args.index_file_name), 'w') as f:
+        json.dump(documents, f)

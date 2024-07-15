@@ -9,7 +9,7 @@ spacy.prefer_gpu()
 # Load SpaCy model
 nlp = spacy.load('en_core_web_sm')
 
-with open('../data/paper_files/file_797.txt', 'r') as file:
+with open('../data/paper_files/file_1.txt', 'r') as file:
     text = file.read()
 
 file.close()
@@ -25,7 +25,11 @@ tokens = [
     # not token.is_stop \
     # and not token.is_punct \
     not token.is_space \
-    and not token.is_digit
+    # and not token.is_digit
 ]
 
-print(' '.join(tokens))
+final_text = ' '.join(tokens) 
+
+print(final_text)
+
+print(len(text), len(final_text))
