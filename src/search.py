@@ -8,7 +8,6 @@ $ python search_cosine.py --index-file <path/to/index.json file>
 import json
 import argparse
 
-from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 
@@ -48,7 +47,7 @@ def search(query, documents, top_k=5):
     query_features = process_query(query)
     scores = []
     for document in tqdm(documents, total=len(documents)):
-        score = cosine_similarity([query_features], [document['features']])[0][0]
+        score = model.similarity([query_features], [document['features']])[0][0]
         scores.append((document, score))
     scores.sort(key=lambda x: x[1], reverse=True)
     return scores[:top_k]
@@ -72,7 +71,7 @@ def extract_relevant_part(query, content, chunk_size=256, overlap=50):
 
     chunk_embeddings = model.encode(chunks)
     query_embedding = extract_features(query)
-    scores = cosine_similarity([query_embedding], chunk_embeddings).flatten()
+    scores = model.similarity([query_embedding], chunk_embeddings).flatten()
     best_chunk_idx = scores.argmax()
     return chunks[best_chunk_idx]
 

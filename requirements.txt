@@ -4,5 +4,4 @@ spacy
 joblib
 sentence-transformers
 tqdm
-scikit-learn
 pandas

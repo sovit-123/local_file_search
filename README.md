@@ -22,7 +22,7 @@ It will install the the requirements from the `requirements.txt` file and downlo
 * Run the `csv_to_text_files.py` script to generate a directory of text files from the CSV file.
 * Run either `create_embeddings.py` or `create_embeddings_no_cleaning.py` to generate the embeddings that are stored in JSON file in the `data` directory. Check the scripts for the respective file names.
   ***Note: Recommended to the `create_embeddings.py` as this cleans the numbers and white spaces using Spacy. Generates slightly better results when searching.***
-* Then run the `search_cosine.py` with the path to the respective embedding file to start the search. Type in the search query.
+* Then run the `search.py` with the path to the respective embedding file to start the search. Type in the search query.
 
 ## Datasets
 
