@@ -1,5 +1,5 @@
 """
-Minimal script to check what SpaCy does to a file with rubbish words.
+Minimal script to check file manipulation with Spacy.
 """
 
 import spacy
