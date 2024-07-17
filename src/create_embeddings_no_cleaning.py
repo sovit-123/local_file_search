@@ -1,22 +1,11 @@
 """
-This script creates embeddings for text files in a directory and stores them in a JSON file.
+This script creates embeddings for text files in a directory and stores them 
+in a JSON file. No cleaning of the text using Spacy. Recommened to use this 
+script to generate embeddings since this gives better results when running
+cosine similarity search on chunks of text.
 
-**Usage:**
-
-1. Specify the directory containing the text files in the `load_and_preprocess_text_files()` function.
-2. Specify the filename for the JSON file in the `with open()` statement.
-
-**Features:**
-
-* Uses the SentenceTransformer model "all-MiniLM-L6-v2" to generate embeddings.
-* Extracts features from each text file and stores them in a dictionary with keys "filename" and "features".
-* Saves the dictionary of features to a JSON file.
-
-**Notes:**
-
-* The script assumes that all text files are in the same directory.
-* The number of files to embed can be specified by setting the `total_files_to_embed` variable.
-* This script does not handle errors in reading text files.
+USAGE:
+* python create_embeddings_no_cleaning.py --index-file-name my_index_file.json
 """
 
 import os

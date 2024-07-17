@@ -2,31 +2,16 @@
 Script to create SBERT embedding and store in JSON file. 
 We clean the text using a SpaCy model here.
 
-NOTE:
-For joblib multiprocessing, processes need to run on CPU.
-However, using joblib + multiprocessing + cpu is faster
-compared to non-parallel processing on GPU.
-For examples, on a laptop RTX 3070Ti, non-parallel embedding 
-creation of 7000 research paper text files takes around 60 minutes.
-On CPU (for both spacy and sentence transformer models) with joblib n_jobs=16
-the same operation takes around 8 minutes.  
-Spoiler: The majority of the time is consumed by clean up of the documents
-done using Spacy.
-
-FURTHER NOTE:
-Recommended to use this script to create embeddings rather than 
-`create_embeddings_no_cleaning.py`. This cleans up useless spaces and 
-numbers which creates a more meaningful and compact embedding. The results
-for simple phrases will be more or less the same. However, for complex
-queries, the embeddings from this script will generate better answers.
-
+This gives slightly worse results in majority of the cases compared to the
+embeddings generated using `create_embeddings_no_cleaning.py` when doing
+cosine similarity search on chunks of text.
 
 Requirements:
 $ pip install spacy
 $ python -m spacy download en_core_web_sm
 
 USAGE:
-$ python create_embeddings.py
+$ python create_embeddings.py --index-file-name my_index_file.json
 """
 
 import os
@@ -34,10 +19,13 @@ import spacy
 import torch
 import json
 import argparse
+import multiprocessing
 
 from sentence_transformers import SentenceTransformer
 from tqdm.auto import tqdm
 from joblib import Parallel, delayed
+
+multiprocessing.set_start_method('spawn', force=True)
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -59,8 +47,8 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
-# device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-device = 'cpu'
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+# device = 'cuda'
 print(device)
 
 # -1 = embed all files
@@ -70,6 +58,12 @@ total_files_to_embed = -1
 if device == 'cuda' or device == 'cuda:0':
     spacy.prefer_gpu()
 nlp = spacy.load('en_core_web_sm')
+
+# Load SBERT model
+model_id = 'all-MiniLM-L6-v2'
+# model_id = 'outputs/checkpoint-12500' # Or any other custom model path.
+model = SentenceTransformer(model_id).to(device)
+print(f"SBERT model device: {next(model.parameters()).device}")
 
 def preprocess_text(text):
     doc = nlp(text)
@@ -172,12 +166,6 @@ def load_and_preprocess_text_files(directory, filename, documents):
 
 if __name__ == '__main__':
     results = []
-
-    # Load SBERT model
-    model_id = 'all-MiniLM-L6-v2'
-    # model_id = 'outputs/checkpoint-12500' # Or any other custom model path.
-    model = SentenceTransformer(model_id).to(device)
-    print(f"SBERT model device: {next(model.parameters()).device}")
     
     directory = '../data/paper_files'
     all_files = os.listdir(directory)
