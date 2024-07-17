@@ -52,6 +52,11 @@ parser.add_argument(
     help='file name for the index JSON file',
     required=True
 )
+parser.add_argument(
+    '--njobs',
+    default=8,
+    help='number of parallel processes to use'
+)
 args = parser.parse_args()
 
 # device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -183,7 +188,7 @@ if __name__ == '__main__':
         files_to_embed = all_files
     
     results = Parallel(
-        n_jobs=16, 
+        n_jobs=args.njobs, 
         backend='multiprocessing'
     )(delayed(load_and_preprocess_text_files)(directory, filename, results) \
             for filename in tqdm(files_to_embed, total=len(files_to_embed))
