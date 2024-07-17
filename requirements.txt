@@ -5,3 +5,4 @@ joblib
 sentence-transformers
 tqdm
 pandas
+pypdf

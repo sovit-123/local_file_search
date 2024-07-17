@@ -24,6 +24,7 @@ import multiprocessing
 from sentence_transformers import SentenceTransformer
 from tqdm.auto import tqdm
 from joblib import Parallel, delayed
+from pypdf import PdfReader
 
 multiprocessing.set_start_method('spawn', force=True)
 
@@ -45,6 +46,17 @@ parser.add_argument(
     default=8,
     help='number of parallel processes to use'
 )
+parser.add_argument(
+    '--directory-path',
+    dest='directory_path',
+    help='path to the directory either conteining text of PDF files',
+    required=True
+)
+parser.add_argument(
+    '--model',
+    default='all-MiniLM-L6-v2',
+    help='embedding model id from hugging face'
+)
 args = parser.parse_args()
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -60,10 +72,25 @@ if device == 'cuda' or device == 'cuda:0':
 nlp = spacy.load('en_core_web_sm')
 
 # Load SBERT model
-model_id = 'all-MiniLM-L6-v2'
+model_id = args.model
 # model_id = 'outputs/checkpoint-12500' # Or any other custom model path.
 model = SentenceTransformer(model_id).to(device)
 print(f"SBERT model device: {next(model.parameters()).device}")
+
+def file_reader(directory, filename):
+    if filename.endswith('.txt'):
+        with open(os.path.join(directory, filename), 'r', errors='ignore') as file:
+            content = file.read()
+
+            return content
+        
+    elif filename.endswith('.pdf'):
+        reader = PdfReader(os.path.join(directory, filename))
+        all_text = ''
+        for page in reader.pages:
+            all_text += page.extract_text() + ' '
+        
+        return all_text
 
 def preprocess_text(text):
     doc = nlp(text)
@@ -145,29 +172,24 @@ def encode_document(
     return documents
 
 def load_and_preprocess_text_files(directory, filename, documents):
-    if filename.endswith('.txt'):
-        with open(os.path.join(directory, filename), 'r', errors='ignore') as file:
-            content = file.read()
-            preprocessed_content = preprocess_text(content)
-            # print(len(preprocessed_content), len(content))
-            # print(preprocessed_content)
-            documents = encode_document(
-                filename, 
-                documents,
-                args.add_file_content, 
-                content, 
-                preprocessed_content,
-                chunk_size=512,
-                overlap=50 
-            )
-            return documents
-            
-    return None
+    content = file_reader(directory, filename)
+    preprocessed_content = preprocess_text(content)
 
+    documents = encode_document(
+        filename, 
+        documents,
+        args.add_file_content, 
+        content, 
+        preprocessed_content,
+        chunk_size=512,
+        overlap=50 
+    )
+    return documents
+            
 if __name__ == '__main__':
     results = []
     
-    directory = '../data/paper_files'
+    directory = args.directory_path
     all_files = os.listdir(directory)
     all_files.sort()
     if total_files_to_embed > -1:

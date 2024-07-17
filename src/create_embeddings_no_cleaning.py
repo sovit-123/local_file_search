@@ -14,6 +14,7 @@ import argparse
 
 from sentence_transformers import SentenceTransformer
 from tqdm.auto import tqdm
+from pypdf import PdfReader
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -28,10 +29,21 @@ parser.add_argument(
     help='file name for the index JSON file',
     required=True
 )
+parser.add_argument(
+    '--directory-path',
+    dest='directory_path',
+    help='path to the directory either conteining text of PDF files',
+    required=True
+)
+parser.add_argument(
+    '--model',
+    default='all-MiniLM-L6-v2',
+    help='embedding model id from hugging face'
+)
 args = parser.parse_args()
 
 # Load SBERT model
-model_id = 'all-MiniLM-L6-v2'
+model_id = args.model
 # model_id = 'outputs/checkpoint-12500' # Or any other custom model path.
 model = SentenceTransformer(model_id)
 # Device setup (not needed for SentenceTransformer as it handles it internally)
@@ -40,6 +52,21 @@ print(device)
 
 # -1 = embed all files
 total_files_to_embed = -1
+
+def file_reader(directory, filename):
+    if filename.endswith('.txt'):
+        with open(os.path.join(directory, filename), 'r', errors='ignore') as file:
+            content = file.read()
+
+            return content
+        
+    elif filename.endswith('.pdf'):
+        reader = PdfReader(os.path.join(directory, filename))
+        all_text = ''
+        for page in reader.pages:
+            all_text += page.extract_text() + ' '
+        
+        return all_text
 
 def extract_features(text):
     """
@@ -124,23 +151,21 @@ def load_and_preprocess_text_files(directory):
 
     # print(files_to_embed)
     for filename in tqdm(files_to_embed, total=len(os.listdir(directory))):
-        if filename.endswith(".txt"):
-            with open(os.path.join(directory, filename), 'r', errors='ignore') as file:
-                content = file.read()
+        content = file_reader(directory, filename)
 
-                documents = encode_document(
-                    filename, 
-                    documents, 
-                    args.add_file_content, 
-                    content, 
-                    chunk_size=512,
-                    overlap=50 
-                )
+        documents = encode_document(
+            filename, 
+            documents, 
+            args.add_file_content, 
+            content, 
+            chunk_size=512,
+            overlap=50 
+        )
                 
     return documents
 
 # Example usage
-documents = load_and_preprocess_text_files('../data/paper_files')
+documents = load_and_preprocess_text_files(args.directory_path)
 
 # Save documents with embeddings to a JSON file
 with open(os.path.join('..', 'data', args.index_file_name), 'w') as f:
