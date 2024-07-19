@@ -25,10 +25,15 @@ parser.add_argument(
     help='whether to print the related content or not \
           as the index file does not always contain file content'
 )
+parser.add_argument(
+    '--model',
+    default='all-MiniLM-L6-v2',
+    help='embedding model id from hugging face'
+)
 args = parser.parse_args()
 
 # Load SBERT model
-model = SentenceTransformer('all-MiniLM-L6-v2')
+model = SentenceTransformer(args.model)
 # model = SentenceTransformer('outputs/checkpoint-12500')
 print(model)
 

@@ -40,6 +40,19 @@ parser.add_argument(
     default='all-MiniLM-L6-v2',
     help='embedding model id from hugging face'
 )
+parser.add_argument(
+    '--chunk-size',
+    dest='chunk_size',
+    default=512,
+    type=int,
+    help='chunk size of embedding creation and extracing content if needed'
+)
+parser.add_argument(
+    '--overlap',
+    default=50,
+    type=int,
+    help='text overlap when creating chunks'
+)
 args = parser.parse_args()
 
 # Load SBERT model
@@ -158,8 +171,8 @@ def load_and_preprocess_text_files(directory):
             documents, 
             args.add_file_content, 
             content, 
-            chunk_size=512,
-            overlap=50 
+            chunk_size=args.chunk_size,
+            overlap=args.overlap
         )
                 
     return documents
