@@ -11,10 +11,14 @@ USAGE:
 import os
 import json
 import argparse
+import multiprocessing
 
 from sentence_transformers import SentenceTransformer
 from tqdm.auto import tqdm
 from pypdf import PdfReader
+from joblib import Parallel, delayed
+
+multiprocessing.set_start_method('spawn', force=True)
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -52,6 +56,11 @@ parser.add_argument(
     default=50,
     type=int,
     help='text overlap when creating chunks'
+)
+parser.add_argument(
+    '--njobs',
+    default=8,
+    help='number of parallel processes to use'
 )
 args = parser.parse_args()
 
@@ -145,7 +154,7 @@ def encode_document(
 
     return documents
 
-def load_and_preprocess_text_files(directory):
+def load_and_preprocess_text_files(directory, documents, filename):
     """
     Loads and preprocesses text files in a directory.
 
@@ -154,32 +163,38 @@ def load_and_preprocess_text_files(directory):
     Returns:
         documents: A list of dictionaries containing filename and embeddings.
     """
-    documents = []
-    all_files = os.listdir(directory)
+    content = file_reader(directory, filename)
+
+    documents = encode_document(
+        filename, 
+        documents, 
+        args.add_file_content, 
+        content, 
+        chunk_size=args.chunk_size,
+        overlap=args.overlap
+    )
+                
+    return documents
+
+if __name__ == '__main__':
+    results = []
+
+    all_files = os.listdir(args.directory_path)
     all_files.sort()
     if total_files_to_embed > -1:
         files_to_embed = all_files[:total_files_to_embed]
     else:
         files_to_embed = all_files
 
-    # print(files_to_embed)
-    for filename in tqdm(files_to_embed, total=len(os.listdir(directory))):
-        content = file_reader(directory, filename)
-
-        documents = encode_document(
-            filename, 
-            documents, 
-            args.add_file_content, 
-            content, 
-            chunk_size=args.chunk_size,
-            overlap=args.overlap
+    results = Parallel(
+        n_jobs=args.njobs, 
+        backend='multiprocessing'
+    )(delayed(load_and_preprocess_text_files)(args.directory_path, results, filename) \
+            for filename in tqdm(files_to_embed, total=len(files_to_embed))
         )
-                
-    return documents
-
-# Example usage
-documents = load_and_preprocess_text_files(args.directory_path)
-
-# Save documents with embeddings to a JSON file
-with open(os.path.join('..', 'data', args.index_file_name), 'w') as f:
-    json.dump(documents, f)
+    
+    documents = [res for result in results for res in result]
+    
+    # Save documents with embeddings to a JSON file
+    with open(os.path.join('..', 'data', args.index_file_name), 'w') as f:
+        json.dump(documents, f)
