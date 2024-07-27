@@ -10,6 +10,7 @@ import argparse
 
 from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
+from llm import generate_next_tokens
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -29,6 +30,18 @@ parser.add_argument(
     '--model',
     default='all-MiniLM-L6-v2',
     help='embedding model id from hugging face'
+)
+parser.add_argument(
+    '--llm-call',
+    dest='llm_call',
+    action='store_true',
+    help='make call to an llm to restructure the answer'
+)
+parser.add_argument(
+    '--topk',
+    default=5,
+    type=int,
+    help='number of chunks to retrieve'
 )
 args = parser.parse_args()
 
@@ -97,7 +110,8 @@ def main():
     query = input("Enter your search query: ")
 
     # Perform search
-    results = search(query, documents)
+    results = search(query, documents, args.topk)
+    relevant_parts = []
     for result in results:
         document = result[0]
         print(f"Filename: {result[0]['filename']}, Score: {result[1]}")
@@ -114,6 +128,7 @@ def main():
                 )
             
             relevant_part = extract_relevant_part(query, document['content'])
+            relevant_parts.append(relevant_part)
             # Few color modifications to make the output more legible.
             if query in relevant_part:
                 RED = "\033[31m"
@@ -121,5 +136,12 @@ def main():
                 relevant_part = relevant_part.replace(query, f"{RED}{query}{RESET}")
             print(f"Relevant part: {relevant_part}\n")
 
+    return relevant_parts, query
+
 if __name__ == "__main__":
-    main()
+    context_list, query = main()
+
+    if args.llm_call:
+        context = '\n\n'.join(context_list)
+    
+        generate_next_tokens(user_input=query, context=context, history='')

@@ -12,6 +12,7 @@ import os
 import json
 import argparse
 import multiprocessing
+import glob as glob
 
 from sentence_transformers import SentenceTransformer
 from tqdm.auto import tqdm
@@ -75,15 +76,15 @@ print(device)
 # -1 = embed all files
 total_files_to_embed = -1
 
-def file_reader(directory, filename):
+def file_reader(filename):
     if filename.endswith('.txt'):
-        with open(os.path.join(directory, filename), 'r', errors='ignore') as file:
+        with open(os.path.join(filename), 'r', errors='ignore') as file:
             content = file.read()
 
             return content
         
     elif filename.endswith('.pdf'):
-        reader = PdfReader(os.path.join(directory, filename))
+        reader = PdfReader(os.path.join(filename))
         all_text = ''
         for page in reader.pages:
             all_text += page.extract_text() + ' '
@@ -154,7 +155,7 @@ def encode_document(
 
     return documents
 
-def load_and_preprocess_text_files(directory, documents, filename):
+def load_and_preprocess_text_files(documents, filename):
     """
     Loads and preprocesses text files in a directory.
 
@@ -163,7 +164,7 @@ def load_and_preprocess_text_files(directory, documents, filename):
     Returns:
         documents: A list of dictionaries containing filename and embeddings.
     """
-    content = file_reader(directory, filename)
+    content = file_reader(filename)
 
     documents = encode_document(
         filename, 
@@ -179,7 +180,9 @@ def load_and_preprocess_text_files(directory, documents, filename):
 if __name__ == '__main__':
     results = []
 
-    all_files = os.listdir(args.directory_path)
+    all_files = glob.glob(os.path.join(args.directory_path, '**'), recursive=True)
+    all_files = [filename for filename in all_files if not os.path.isdir(filename)]
+    print(all_files)
     all_files.sort()
     if total_files_to_embed > -1:
         files_to_embed = all_files[:total_files_to_embed]
@@ -189,7 +192,7 @@ if __name__ == '__main__':
     results = Parallel(
         n_jobs=args.njobs, 
         backend='multiprocessing'
-    )(delayed(load_and_preprocess_text_files)(args.directory_path, results, filename) \
+    )(delayed(load_and_preprocess_text_files)(results, filename) \
             for filename in tqdm(files_to_embed, total=len(files_to_embed))
         )
     

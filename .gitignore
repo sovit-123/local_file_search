@@ -2,3 +2,5 @@ data/*
 !data/readme.txt
 src/outputs
 src/wandb
+
+__pycache__
