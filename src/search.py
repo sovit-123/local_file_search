@@ -37,6 +37,12 @@ parser.add_argument(
     action='store_true',
     help='make call to an llm to restructure the answer'
 )
+parser.add_argument(
+    '--topk',
+    default=5,
+    type=int,
+    help='number of chunks to retrieve'
+)
 args = parser.parse_args()
 
 # Load SBERT model
@@ -104,7 +110,7 @@ def main():
     query = input("Enter your search query: ")
 
     # Perform search
-    results = search(query, documents)
+    results = search(query, documents, args.topk)
     relevant_parts = []
     for result in results:
         document = result[0]
