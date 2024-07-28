@@ -1,6 +1,5 @@
 torch==2.2.0
 transformers
-spacy
 joblib
 sentence-transformers
 tqdm
