@@ -1,11 +1,9 @@
 """
 This script creates embeddings for text files in a directory and stores them 
-in a JSON file. No cleaning of the text using Spacy. Recommened to use this 
-script to generate embeddings since this gives better results when running
-cosine similarity search on chunks of text.
+in a JSON file.
 
 USAGE:
-* python create_embeddings_no_cleaning.py --index-file-name my_index_file.json
+$ python create_embeddings.py --index-file-name my_index_file.json
 """
 
 import os

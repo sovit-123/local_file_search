@@ -2,7 +2,7 @@
 Search based on cosine similarity.
 
 USAGE:
-$ python search_cosine.py --index-file <path/to/index.json file>
+$ python search.py --index-file path/to/index.json
 """
 
 import json
