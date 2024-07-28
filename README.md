@@ -20,7 +20,7 @@ It will install the the requirements from the `requirements.txt` file.
 
 * Download the `papers.csv` file from [here](https://www.kaggle.com/datasets/benhamner/nips-papers?select=papers.csv) and keep in the `data` directory. **You can also keep PDF files in the directory and pass the directory path**.
 
-* *Execute this step only of you download the above CSV file. Not needed of you have your own text files or PDFs in a directory*. Run the `csv_to_text_files.py` script to generate a directory of text files from the CSV file. 
+* *Execute this step only of you download the above CSV file. Not needed if you have your own text files or PDFs in a directory*. Run the `csv_to_text_files.py` script to generate a directory of text files from the CSV file. 
 
 * Run `create_embeddings.py` to generate the embeddings that are stored in JSON file in the `data` directory. Check the scripts for the respective file names. ***Check `src/create_embedding.py`*** for relevant command line arguments to be passed.
 
