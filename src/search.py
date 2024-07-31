@@ -81,7 +81,7 @@ def chunk_text(text, chunk_size=100, overlap=50):
             break
     return chunks
 
-def extract_relevant_part(query, content, chunk_size=256, overlap=50):
+def extract_relevant_part(query, content, chunk_size=96, overlap=8):
     """Extract the part of the content that is most relevant to the query."""
     chunks = chunk_text(content, chunk_size, overlap)
     if not chunks:

@@ -46,13 +46,13 @@ parser.add_argument(
 parser.add_argument(
     '--chunk-size',
     dest='chunk_size',
-    default=512,
+    default=200,
     type=int,
     help='chunk size of embedding creation and extracing content if needed'
 )
 parser.add_argument(
     '--overlap',
-    default=50,
+    default=32,
     type=int,
     help='text overlap when creating chunks'
 )
