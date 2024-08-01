@@ -67,7 +67,9 @@ def generate_next_tokens(user_input, context, history):
 
     outputs = model.generate(**inputs, **generate_kwargs)
 
-    print(tokenizer.batch_decode(outputs[:, inputs['input_ids'].shape[1]:], skip_special_tokens=True))
+    answer = tokenizer.batch_decode(outputs[:, inputs['input_ids'].shape[1]:], skip_special_tokens=True)
+
+    print(answer[0])
 
 if __name__ == '__main__':
     generate_next_tokens('Who are you and what can you do?', context='', history='')
