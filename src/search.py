@@ -101,7 +101,9 @@ def load_documents(file_path):
     return documents
 
 def main(documents):
-    query = input("Enter your search query: ")
+    RED = "\033[31m"
+    RESET = "\033[0m"
+    query = input(f"\n{RED}Enter your search query:{RESET} ")
 
     # Perform search.
     results = search(query, documents, args.topk)
@@ -125,8 +127,6 @@ def main(documents):
             relevant_parts.append(relevant_part)
             # Few color modifications to make the output more legible.
             if query in relevant_part:
-                RED = "\033[31m"
-                RESET = "\033[0m"
                 relevant_part = relevant_part.replace(query, f"{RED}{query}{RESET}")
             print(f"Relevant part: {relevant_part}\n")
 
@@ -137,9 +137,10 @@ if __name__ == "__main__":
     documents_file_path = args.index_file
     documents = load_documents(documents_file_path)
 
-    context_list, query = main(documents)
-
-    if args.llm_call:
-        context = '\n\n'.join(context_list)
+    while True:
+        context_list, query = main(documents)
     
-        generate_next_tokens(user_input=query, context=context, history='')
+        if args.llm_call:
+            context = '\n\n'.join(context_list)
+        
+            generate_next_tokens(user_input=query, context=context)

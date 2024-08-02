@@ -21,7 +21,14 @@ processor = AutoProcessor.from_pretrained('microsoft/Phi-3-mini-4k-instruct')
 
 CONTEXT_LENGTH = 3800 # This uses around 9.9GB of GPU memory when highest context length is reached.
 
-def generate_next_tokens(user_input, context, history):
+YELLOW = "\033[93m"
+RESET = "\033[0m"
+
+history = ''
+
+def generate_next_tokens(user_input, context):
+    global history
+
     print('History: ', history)
     print('*' * 50)
 
@@ -39,13 +46,7 @@ def generate_next_tokens(user_input, context, history):
 
     print(template)
 
-    if len(history) <= 1:
-        prompt = '<s>' + template
-    else:
-        prompt = '<s>'
-        for history_list in history:
-            prompt += f"<|user|>\n{history_list[0]}<|end|>\n<|assistant|>\n{history_list[1]}<|end|>\n"
-        prompt += f"<|user|>\n{user_input}<|end|>\n<|assistant|>\n"
+    prompt =  '<s>' + history + user_input + '<|end|>\n<|assistant|>\n' if len(history) > 1 else '<s>' + template
 
     print('Prompt: ', prompt)
     print('*' * 50)
@@ -67,9 +68,14 @@ def generate_next_tokens(user_input, context, history):
 
     outputs = model.generate(**inputs, **generate_kwargs)
 
-    answer = tokenizer.batch_decode(outputs[:, inputs['input_ids'].shape[1]:], skip_special_tokens=True)
+    answer = tokenizer.batch_decode(outputs[:, inputs['input_ids'].shape[1]:], skip_special_tokens=True)[0]
 
-    print(answer[0])
+    if len(history) > 1:
+        history += f"{user_input}<|end|>\n<|assistant|>\n{answer}<|end|>\n<|user|>\n"
+    else:
+        history = f"{template}{answer}<|end|>\n<|user|>\n"
+
+    print(f"\n{YELLOW}{answer}{RESET}")
 
 if __name__ == '__main__':
     generate_next_tokens('Who are you and what can you do?', context='', history='')
