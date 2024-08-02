@@ -100,16 +100,10 @@ def load_documents(file_path):
         documents = json.load(f)
     return documents
 
-def main():
-    documents_file_path = args.index_file
-
-    # Load documents.
-    documents = load_documents(documents_file_path)
-
-    # Example query
+def main(documents):
     query = input("Enter your search query: ")
 
-    # Perform search
+    # Perform search.
     results = search(query, documents, args.topk)
     relevant_parts = []
     for result in results:
@@ -139,7 +133,11 @@ def main():
     return relevant_parts, query
 
 if __name__ == "__main__":
-    context_list, query = main()
+    # Load documents.
+    documents_file_path = args.index_file
+    documents = load_documents(documents_file_path)
+
+    context_list, query = main(documents)
 
     if args.llm_call:
         context = '\n\n'.join(context_list)
