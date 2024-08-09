@@ -11,13 +11,18 @@ quant_config = BitsAndBytesConfig(
     load_in_4bit=True
 )
 
-tokenizer = AutoTokenizer.from_pretrained('microsoft/Phi-3-mini-4k-instruct')
+tokenizer = AutoTokenizer.from_pretrained(
+    'microsoft/Phi-3-mini-4k-instruct', trust_remote_code=True
+)
 model = AutoModelForCausalLM.from_pretrained(
     'microsoft/Phi-3-mini-4k-instruct',
     quantization_config=quant_config,
-    device_map=device
+    device_map=device,
+    trust_remote_code=True
 )
-processor = AutoProcessor.from_pretrained('microsoft/Phi-3-mini-4k-instruct')
+processor = AutoProcessor.from_pretrained(
+    'microsoft/Phi-3-mini-4k-instruct', trust_remote_code=True
+)
 
 CONTEXT_LENGTH = 3800 # This uses around 9.9GB of GPU memory when highest context length is reached.
 
@@ -29,13 +34,15 @@ history = ''
 def generate_next_tokens(user_input, context):
     global history
 
-    print('History: ', history)
+    # print('History: ', history)
     print('*' * 50)
+
+    user_input += '\n' + 'Answer the above question based on the following context:\n' + context
 
     chat = [
         {'role': 'user', 'content': 'Hi'},
         {'role': 'assistant', 'content': 'Hello.'},
-        {'role': 'user', 'content': user_input + '\n' + 'Answer the above question based on the following context:\n' + context},
+        {'role': 'user', 'content': user_input},
     ]
 
     template = tokenizer.apply_chat_template(
@@ -44,11 +51,11 @@ def generate_next_tokens(user_input, context):
         add_generation_prompt=True
     )
 
-    print(template)
+    # print(template)
 
     prompt =  '<s>' + history + user_input + '<|end|>\n<|assistant|>\n' if len(history) > 1 else '<s>' + template
 
-    print('Prompt: ', prompt)
+    # print('Prompt: ', prompt)
     print('*' * 50)
 
     inputs = tokenizer(prompt, return_tensors='pt').to(device)

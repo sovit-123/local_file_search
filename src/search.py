@@ -110,7 +110,7 @@ def main(documents):
     relevant_parts = []
     for result in results:
         document = result[0]
-        print(f"Filename: {result[0]['filename']}, Score: {result[1]}")
+        # print(f"Filename: {result[0]['filename']}, Score: {result[1]}")
         # Search for relevevant content if `--extract-content` is passed.
         if args.extract_content:
             try:
@@ -128,7 +128,7 @@ def main(documents):
             # Few color modifications to make the output more legible.
             if query in relevant_part:
                 relevant_part = relevant_part.replace(query, f"{RED}{query}{RESET}")
-            print(f"Relevant part: {relevant_part}\n")
+            # print(f"Relevant part: {relevant_part}\n")
 
     return relevant_parts, query
 
