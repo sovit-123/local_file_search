@@ -7,10 +7,16 @@ $ python search.py --index-file path/to/index.json
 
 import json
 import argparse
+import torch
 
 from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 from llm import generate_next_tokens
+from transformers import (
+    AutoModelForCausalLM, 
+    AutoTokenizer, 
+    BitsAndBytesConfig
+)
 
 def parser_opt():
     parser = argparse.ArgumentParser()
@@ -131,7 +137,9 @@ def main(documents, query, model, extract_content, topk=5):
 
     return retrieved_docs
 
-if __name__ == "__main__":
+if __name__ == '__main__':
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
     RED = "\033[31m"
     RESET = "\033[0m"
 
@@ -140,18 +148,40 @@ if __name__ == "__main__":
     extract_content = args.extract_content
 
     # Load embedding model.
-    model = load_embedding_model(args.model)
+    embedding_model = load_embedding_model(args.model)
     
     # Load documents.
     documents_file_path = args.index_file
     documents = load_documents(documents_file_path)
 
+    # Load the LLM only when if `args.llm` has been passed by user.
+    if args.llm_call:
+        quant_config = BitsAndBytesConfig(
+            load_in_4bit=True
+        )
+
+        tokenizer = AutoTokenizer.from_pretrained(
+            'microsoft/Phi-3-mini-4k-instruct', trust_remote_code=True
+        )
+        llm_model = AutoModelForCausalLM.from_pretrained(
+            'microsoft/Phi-3-mini-4k-instruct',
+            quantization_config=quant_config,
+            device_map=device,
+            trust_remote_code=True
+        )
+
     # Keep on asking the user prompt until the user exits.
     while True:
         query = input(f"\n{RED}Enter your search query:{RESET} ")
-        context_list = main(documents, query, model, extract_content, topk)
+        context_list = main(documents, query, embedding_model, extract_content, topk)
     
         if args.llm_call:
             context = '\n\n'.join(context_list)
         
-            generate_next_tokens(user_input=query, context=context)
+            generate_next_tokens(
+                user_input=query, 
+                context=context,
+                model=llm_model,
+                tokenizer=tokenizer,
+                device=device 
+            )
