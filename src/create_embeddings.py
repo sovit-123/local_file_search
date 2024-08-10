@@ -65,7 +65,6 @@ args = parser.parse_args()
 
 # Load SBERT model
 model_id = args.model
-# model_id = 'outputs/checkpoint-12500' # Or any other custom model path.
 model = SentenceTransformer(model_id)
 # Device setup (not needed for SentenceTransformer as it handles it internally)
 device = model.device

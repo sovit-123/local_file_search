@@ -47,8 +47,7 @@ args = parser.parse_args()
 
 # Load SBERT model
 model = SentenceTransformer(args.model)
-# model = SentenceTransformer('outputs/checkpoint-12500')
-print(model)
+# print(model)
 
 def extract_features(text):
     """Generate SBERT embeddings for the input text."""
