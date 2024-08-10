@@ -109,6 +109,8 @@ def load_documents(file_path):
     return documents
 
 def main(documents, query, model, extract_content, topk=5):
+    RED = "\033[31m"
+    RESET = "\033[0m"
     # Perform search.
     results = search(query, documents, model, topk)
     relevant_parts = []

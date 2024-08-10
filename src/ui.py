@@ -134,7 +134,7 @@ output_text = gr.Textbox(label='Generated Text')
 iface = gr.ChatInterface(
     fn=generate_next_tokens, 
     multimodal=True,
-    title='Token generator'
+    title='File Chat'
 )
 
 iface.launch()
