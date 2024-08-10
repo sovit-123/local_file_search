@@ -1,28 +1,7 @@
-from transformers import (
-    AutoModelForCausalLM, 
-    AutoTokenizer, 
-    BitsAndBytesConfig,
-    AutoProcessor
-)
-
-device = 'cuda'
-
-quant_config = BitsAndBytesConfig(
-    load_in_4bit=True
-)
-
-tokenizer = AutoTokenizer.from_pretrained(
-    'microsoft/Phi-3-mini-4k-instruct', trust_remote_code=True
-)
-model = AutoModelForCausalLM.from_pretrained(
-    'microsoft/Phi-3-mini-4k-instruct',
-    quantization_config=quant_config,
-    device_map=device,
-    trust_remote_code=True
-)
-processor = AutoProcessor.from_pretrained(
-    'microsoft/Phi-3-mini-4k-instruct', trust_remote_code=True
-)
+"""
+This function in this script is only called as a part of LLM generation 
+with a given context.
+"""
 
 CONTEXT_LENGTH = 3800 # This uses around 9.9GB of GPU memory when highest context length is reached.
 
@@ -31,7 +10,7 @@ RESET = "\033[0m"
 
 history = ''
 
-def generate_next_tokens(user_input, context):
+def generate_next_tokens(user_input, context, model, tokenizer, device):
     global history
 
     # print('History: ', history)
@@ -85,4 +64,34 @@ def generate_next_tokens(user_input, context):
     print(f"\n{YELLOW}{answer}{RESET}")
 
 if __name__ == '__main__':
-    generate_next_tokens('Who are you and what can you do?', context='', history='')
+    from transformers import (
+        AutoModelForCausalLM, 
+        AutoTokenizer, 
+        BitsAndBytesConfig
+    )
+
+    import torch
+
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
+    quant_config = BitsAndBytesConfig(
+        load_in_4bit=True
+    )
+
+    tokenizer = AutoTokenizer.from_pretrained(
+        'microsoft/Phi-3-mini-4k-instruct', trust_remote_code=True
+    )
+    model = AutoModelForCausalLM.from_pretrained(
+        'microsoft/Phi-3-mini-4k-instruct',
+        quantization_config=quant_config,
+        device_map=device,
+        trust_remote_code=True
+    )
+    generate_next_tokens(
+        'Who are you and what can you do?', 
+        context='',
+        # context='You are a chess player.', 
+        model=model,
+        tokenizer=tokenizer,
+        device=device
+    )
