@@ -1,8 +1,7 @@
 from transformers import (
     AutoModelForCausalLM, 
     AutoTokenizer, 
-    BitsAndBytesConfig,
-    AutoProcessor
+    BitsAndBytesConfig
 )
 
 device = 'cuda'
@@ -19,9 +18,6 @@ model = AutoModelForCausalLM.from_pretrained(
     quantization_config=quant_config,
     device_map=device,
     trust_remote_code=True
-)
-processor = AutoProcessor.from_pretrained(
-    'microsoft/Phi-3-mini-4k-instruct', trust_remote_code=True
 )
 
 CONTEXT_LENGTH = 3800 # This uses around 9.9GB of GPU memory when highest context length is reached.

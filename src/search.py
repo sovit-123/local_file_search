@@ -83,7 +83,7 @@ def chunk_text(text, chunk_size=100, overlap=50):
             break
     return chunks
 
-def extract_relevant_part(query, content, model, chunk_size=96, overlap=8):
+def extract_relevant_part(query, content, model, chunk_size=32, overlap=4):
     """Extract the part of the content that is most relevant to the query."""
     chunks = chunk_text(content, chunk_size, overlap)
     if not chunks:
@@ -109,7 +109,7 @@ def main(documents, query, model, extract_content, topk=5):
     retrieved_docs = []
     for result in results:
         document = result[0]
-        # print(f"Filename: {result[0]['filename']}, Score: {result[1]}")
+        print(f"Filename: {result[0]['filename']}, Score: {result[1]}")
         # Search for relevevant content if `--extract-content` is passed.
         if extract_content:
             try:
@@ -126,9 +126,8 @@ def main(documents, query, model, extract_content, topk=5):
             relevant_part = extract_relevant_part(query, document['content'], model)
             relevant_parts.append(relevant_part)
             # Few color modifications to make the output more legible.
-            if query in relevant_part:
-                relevant_part = relevant_part.replace(query, f"{RED}{query}{RESET}")
-            # print(f"Relevant part: {relevant_part}\n")
+            document['content'] = document['content'].replace(relevant_part, f"{RED}{relevant_part}{RESET}")
+            print(f"Retrieved document: {document['content']}\n")
 
     return retrieved_docs
 
@@ -147,6 +146,7 @@ if __name__ == "__main__":
     documents_file_path = args.index_file
     documents = load_documents(documents_file_path)
 
+    # Keep on asking the user prompt until the user exits.
     while True:
         query = input(f"\n{RED}Enter your search query:{RESET} ")
         context_list = main(documents, query, model, extract_content, topk)
