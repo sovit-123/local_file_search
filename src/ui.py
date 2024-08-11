@@ -5,7 +5,6 @@ from transformers import (
     AutoModelForCausalLM, 
     AutoTokenizer, 
     BitsAndBytesConfig,
-    AutoProcessor,
     TextIteratorStreamer
 )
 from search import load_documents, main, load_embedding_model
@@ -16,17 +15,16 @@ quant_config = BitsAndBytesConfig(
     load_in_4bit=True
 )
 
+model_id = 'microsoft/Phi-3-mini-4k-instruct'
+
 tokenizer = AutoTokenizer.from_pretrained(
-    'microsoft/Phi-3-mini-4k-instruct', trust_remote_code=True
+    model_id, trust_remote_code=True
 )
 model = AutoModelForCausalLM.from_pretrained(
-    'microsoft/Phi-3-mini-4k-instruct',
+    model_id,
     quantization_config=quant_config,
     device_map=device,
     trust_remote_code=True
-)
-processor = AutoProcessor.from_pretrained(
-    'microsoft/Phi-3-mini-4k-instruct', trust_remote_code=True
 )
 
 embedding_model = load_embedding_model('all-MiniLM-L6-v2')
