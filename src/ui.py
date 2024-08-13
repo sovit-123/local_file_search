@@ -15,7 +15,8 @@ quant_config = BitsAndBytesConfig(
     load_in_4bit=True
 )
 
-model_id = 'microsoft/Phi-3-mini-4k-instruct'
+# model_id = 'microsoft/Phi-3-mini-4k-instruct'
+model_id = 'microsoft/Phi-3-small-8k-instruct'
 
 tokenizer = AutoTokenizer.from_pretrained(
     model_id, trust_remote_code=True
