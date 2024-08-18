@@ -66,8 +66,7 @@ def parse_opt():
     return args
 
 # Load SBERT model
-def load_model(args):
-    model_id = args.model
+def load_model(model_id):
     model = SentenceTransformer(model_id)
     # Device setup (not needed for SentenceTransformer as it handles it internally)
     device = model.device
@@ -162,7 +161,14 @@ def encode_document(
 
     return documents
 
-def load_and_preprocess_text_files(documents, filename, args, model=None):
+def load_and_preprocess_text_files(
+        documents, 
+        filename, 
+        add_file_content=False,
+        chunk_size=128,
+        overlap=16, 
+        model=None
+):
     """
     Loads and preprocesses text files in a directory.
 
@@ -176,10 +182,10 @@ def load_and_preprocess_text_files(documents, filename, args, model=None):
     documents = encode_document(
         filename, 
         documents, 
-        args.add_file_content, 
+        add_file_content, 
         content, 
-        chunk_size=args.chunk_size,
-        overlap=args.overlap,
+        chunk_size=chunk_size,
+        overlap=overlap,
         model=model
     )
                 
@@ -188,7 +194,7 @@ def load_and_preprocess_text_files(documents, filename, args, model=None):
 if __name__ == '__main__':
     args = parse_opt()
 
-    model = load_model(args)
+    model = load_model(args.model)
 
     results = []
 
@@ -204,7 +210,14 @@ if __name__ == '__main__':
     results = Parallel(
         n_jobs=args.njobs, 
         backend='multiprocessing'
-    )(delayed(load_and_preprocess_text_files)(results, filename, args, model) \
+    )(delayed(load_and_preprocess_text_files)(
+        results, 
+        filename, 
+        args.add_file_content,
+        args.chunk_size,
+        args.overlap,
+        model
+    ) \
             for filename in tqdm(files_to_embed, total=len(files_to_embed))
         )
     
