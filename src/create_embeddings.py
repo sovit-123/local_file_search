@@ -19,56 +19,60 @@ from joblib import Parallel, delayed
 
 multiprocessing.set_start_method('spawn', force=True)
 
-parser = argparse.ArgumentParser()
-parser.add_argument(
-    '--add-file-content',
-    dest='add_file_content',
-    action='store_true',
-    help='whether to store the file content in the final index file or not'
-)
-parser.add_argument(
-    '--index-file-name',
-    dest='index_file_name',
-    help='file name for the index JSON file',
-    required=True
-)
-parser.add_argument(
-    '--directory-path',
-    dest='directory_path',
-    help='path to the directory either conteining text of PDF files',
-    required=True
-)
-parser.add_argument(
-    '--model',
-    default='all-MiniLM-L6-v2',
-    help='embedding model id from hugging face'
-)
-parser.add_argument(
-    '--chunk-size',
-    dest='chunk_size',
-    default=200,
-    type=int,
-    help='chunk size of embedding creation and extracing content if needed'
-)
-parser.add_argument(
-    '--overlap',
-    default=32,
-    type=int,
-    help='text overlap when creating chunks'
-)
-parser.add_argument(
-    '--njobs',
-    default=8,
-    help='number of parallel processes to use'
-)
-args = parser.parse_args()
+def parse_opt():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--add-file-content',
+        dest='add_file_content',
+        action='store_true',
+        help='whether to store the file content in the final index file or not'
+    )
+    parser.add_argument(
+        '--index-file-name',
+        dest='index_file_name',
+        help='file name for the index JSON file',
+        required=True
+    )
+    parser.add_argument(
+        '--directory-path',
+        dest='directory_path',
+        help='path to the directory either conteining text of PDF files',
+        required=True
+    )
+    parser.add_argument(
+        '--model',
+        default='all-MiniLM-L6-v2',
+        help='embedding model id from hugging face'
+    )
+    parser.add_argument(
+        '--chunk-size',
+        dest='chunk_size',
+        default=128,
+        type=int,
+        help='chunk size of embedding creation and extracing content if needed'
+    )
+    parser.add_argument(
+        '--overlap',
+        default=16,
+        type=int,
+        help='text overlap when creating chunks'
+    )
+    parser.add_argument(
+        '--njobs',
+        default=8,
+        help='number of parallel processes to use'
+    )
+    args = parser.parse_args()
+    return args
 
 # Load SBERT model
-model_id = args.model
-model = SentenceTransformer(model_id)
-# Device setup (not needed for SentenceTransformer as it handles it internally)
-device = model.device
-print(device)
+def load_model(args):
+    model_id = args.model
+    model = SentenceTransformer(model_id)
+    # Device setup (not needed for SentenceTransformer as it handles it internally)
+    device = model.device
+    print(device)
+    return model
 
 # -1 = embed all files
 total_files_to_embed = -1
@@ -88,7 +92,7 @@ def file_reader(filename):
         
         return all_text
 
-def extract_features(text):
+def extract_features(text, model):
     """
     Extracts embeddings from a given text using the SentenceTransformer model.
     
@@ -112,13 +116,19 @@ def chunk_text(text, chunk_size=512, overlap=50):
     return chunks
 
 def encode_document(
-    filename, documents, add_file_content, content, chunk_size=512, overlap=50
+    filename, 
+    documents, 
+    add_file_content, 
+    content, 
+    chunk_size=512, 
+    overlap=50,
+    model=None
 ):
     """Encode the document in chunks."""
     chunks = chunk_text(content, chunk_size, overlap)
 
     if not chunks:  # If no chunks are possible.
-        features = extract_features(content).tolist()
+        features = extract_features(content, model).tolist()
         if add_file_content: # If original file content to be added.
             documents.append({
                 'filename': filename, 
@@ -135,7 +145,7 @@ def encode_document(
 
     else:
         for i, chunk in enumerate(chunks):
-            features = extract_features(chunk).tolist()
+            features = extract_features(chunk, model).tolist()
             if add_file_content: # If original file content to be added.
                 documents.append({
                     'filename': filename, 
@@ -152,7 +162,7 @@ def encode_document(
 
     return documents
 
-def load_and_preprocess_text_files(documents, filename):
+def load_and_preprocess_text_files(documents, filename, args, model=None):
     """
     Loads and preprocesses text files in a directory.
 
@@ -169,12 +179,17 @@ def load_and_preprocess_text_files(documents, filename):
         args.add_file_content, 
         content, 
         chunk_size=args.chunk_size,
-        overlap=args.overlap
+        overlap=args.overlap,
+        model=model
     )
                 
     return documents
 
 if __name__ == '__main__':
+    args = parse_opt()
+
+    model = load_model(args)
+
     results = []
 
     all_files = glob.glob(os.path.join(args.directory_path, '**'), recursive=True)
@@ -189,7 +204,7 @@ if __name__ == '__main__':
     results = Parallel(
         n_jobs=args.njobs, 
         backend='multiprocessing'
-    )(delayed(load_and_preprocess_text_files)(results, filename) \
+    )(delayed(load_and_preprocess_text_files)(results, filename, args, model) \
             for filename in tqdm(files_to_embed, total=len(files_to_embed))
         )
     
