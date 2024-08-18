@@ -20,11 +20,15 @@ It will install the the requirements from the `requirements.txt` file.
 
 * August 10, 2024: Added `ui.py` to the `src` directory for interactive Gradio UI chat. You can select an indexed JSON file to chat with it. See the following steps to create an embedding JSON file.
 
-## Steps to Run
+## Steps to Chat with Any PDF in Graio UI
 
-* Download the `papers.csv` file from [here](https://www.kaggle.com/datasets/benhamner/nips-papers?select=papers.csv) and keep in the `data` directory. **You can also keep PDF files in the directory and pass the directory path**.
+<span style="color: green">***You can run `ui.py` and select the any PDF file in the Gradio UI to interactively chat with the document.***</span> <span style="color: purple">***(Just do `python ui.py` and start chatting)***</span>
 
-* *Execute this step only if you download the above CSV file. Not needed if you have your own text files or PDFs in a directory*. Run the `csv_to_text_files.py` script to generate a directory of text files from the CSV file. 
+## Steps to Run Through CLI
+
+* (**Optional**) Download the `papers.csv` file from [here](https://www.kaggle.com/datasets/benhamner/nips-papers?select=papers.csv) and keep in the `data` directory. <span style="color: red">**You can also keep PDF files in the directory and pass the directory path**.</span>
+
+* (**Optional**) <span style="color: red">*Execute this step only if you download the above CSV file. Not needed if you have your own text files or PDFs in a directory*</span>. Run the `csv_to_text_files.py` script to generate a directory of text files from the CSV file. 
 
 * Run `create_embeddings.py` to generate the embeddings that are stored in JSON file in the `data` directory. Check the scripts for the respective file names. ***Check `src/create_embedding.py`*** for relevant command line arguments to be passed.
 
@@ -43,18 +47,16 @@ It will install the the requirements from the `requirements.txt` file.
 
 * Then run the `search.py` with the path to the respective embedding file to start the search. Type in the search query.
 
-  ***Alternatively, you can run `ui.py` and select the indexed JSON file in the Gradio UI to interactively chat with the document.***
-
   * General example:
-  
+
     ```
     python search.py --index-file path/to/index.json
     ```
-
+  
     The above command just throws a list of TopK files that matches the query.
 
   * Additional command line arguments:
-  
+
     * `--extract-content`: Whether to print the related content or not. Only works if `--add-file-content` was passed during creation of embeddings.
     * `--model`: Sentence Transformer model tag if a model other than `all-MiniLM-L6-v2` was used during the creation of embeddings.
     * `--topk`: Top K embeddings to match and output to the user.

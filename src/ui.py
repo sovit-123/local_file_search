@@ -1,4 +1,6 @@
 import gradio as gr
+import json
+import os
 import threading
 
 from transformers import (
@@ -8,6 +10,7 @@ from transformers import (
     TextIteratorStreamer
 )
 from search import load_documents, main, load_embedding_model
+from create_embeddings import load_and_preprocess_text_files
 
 device = 'cuda'
 
@@ -15,8 +18,8 @@ quant_config = BitsAndBytesConfig(
     load_in_4bit=True
 )
 
-# model_id = 'microsoft/Phi-3-mini-4k-instruct'
-model_id = 'microsoft/Phi-3-small-8k-instruct'
+model_id = 'microsoft/Phi-3-mini-128k-instruct'
+# model_id = 'microsoft/Phi-3-small-128k-instruct'
 
 tokenizer = AutoTokenizer.from_pretrained(
     model_id, trust_remote_code=True
@@ -37,9 +40,11 @@ streamer = TextIteratorStreamer(
 CONTEXT_LENGTH = 3800 # This uses around 9.9GB of GPU memory when highest context length is reached.
 
 documents = None
+results = []
 
 def generate_next_tokens(user_input, history):
     global documents
+    global results
 
     # print(f"User Input: ", user_input)
     # print('History: ', history)
@@ -54,7 +59,20 @@ def generate_next_tokens(user_input, history):
     # next turn. However, the model may remember the context from its own
     # reply and user's query. This approach saves a lot of memory as well.
     if len(user_input['files']) != 0:
-        documents = load_documents(user_input['files'][0])
+        results = load_and_preprocess_text_files(
+            results,
+            user_input['files'][0],
+            add_file_content=True,
+            chunk_size=128,
+            overlap=16,
+            model=embedding_model
+        )
+        embedded_docs = [result for result in results]
+        # Save documents with embeddings to a JSON file.
+        with open(os.path.join('..', 'data', 'temp.json'), 'w') as f:
+            json.dump(embedded_docs, f)
+        
+        documents = load_documents(os.path.join('..', 'data', 'temp.json'))
     
     final_input = ''
     user_text = user_input['text']
@@ -126,6 +144,7 @@ def generate_next_tokens(user_input, history):
         final_output = ''.join(outputs)
 
         yield final_output
+
 
 input_text = gr.Textbox(lines=5, label='Prompt')
 output_text = gr.Textbox(label='Generated Text')
