@@ -9,7 +9,8 @@ from transformers import (
     BitsAndBytesConfig,
     TextIteratorStreamer
 )
-from search import load_documents, main, load_embedding_model
+from search import load_documents, load_embedding_model
+from search import main as search_main
 from create_embeddings import load_and_preprocess_text_files
 
 device = 'cuda'
@@ -50,14 +51,8 @@ def generate_next_tokens(user_input, history):
     # print('History: ', history)
     print('*' * 50)
 
-    # The way we are managing uploaded file and history here:
-    # When the user first uploads the file, the entire content gets
-    # loaded into the prompt for that particular chat turn.
-    # When the next turn comes, right now, we are using the `history`
-    # list from Gradio to load the history again, however, that only contains
-    # the file path. So, we cannot exactly get the content of the file in the
-    # next turn. However, the model may remember the context from its own
-    # reply and user's query. This approach saves a lot of memory as well.
+    # If a new PDF file is uploaded, create embeddings, store in `temp.json`
+    # and load the embedding file.
     if len(user_input['files']) != 0:
         results = load_and_preprocess_text_files(
             results,
@@ -78,7 +73,7 @@ def generate_next_tokens(user_input, history):
     user_text = user_input['text']
 
     # Get the context.
-    context_list = main(
+    context_list = search_main(
         documents, 
         user_text, 
         embedding_model,
@@ -146,13 +141,14 @@ def generate_next_tokens(user_input, history):
         yield final_output
 
 
-input_text = gr.Textbox(lines=5, label='Prompt')
-output_text = gr.Textbox(label='Generated Text')
+def main():
+    iface = gr.ChatInterface(
+        fn=generate_next_tokens, 
+        multimodal=True,
+        title='File Chat'
+    )
+    
+    iface.launch()
 
-iface = gr.ChatInterface(
-    fn=generate_next_tokens, 
-    multimodal=True,
-    title='File Chat'
-)
-
-iface.launch()
+if __name__ == '__main__':
+    main()
