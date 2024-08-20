@@ -15,37 +15,50 @@ from create_embeddings import load_and_preprocess_text_files
 
 device = 'cuda'
 
-quant_config = BitsAndBytesConfig(
-    load_in_4bit=True
-)
+model_id = None
+model = None
+tokenizer = None
+streamer = None
 
-model_id = 'microsoft/Phi-3-mini-128k-instruct'
-# model_id = 'microsoft/Phi-3-small-128k-instruct'
+def load_llm(chat_model_id):
+    global model
+    global tokenizer
+    global streamer
 
-tokenizer = AutoTokenizer.from_pretrained(
-    model_id, trust_remote_code=True
-)
-model = AutoModelForCausalLM.from_pretrained(
-    model_id,
-    quantization_config=quant_config,
-    device_map=device,
-    trust_remote_code=True
-)
+    quant_config = BitsAndBytesConfig(
+        load_in_4bit=True
+    )
+
+    tokenizer = AutoTokenizer.from_pretrained(
+        chat_model_id, trust_remote_code=True
+    )
+    model = AutoModelForCausalLM.from_pretrained(
+        chat_model_id,
+        quantization_config=quant_config,
+        device_map=device,
+        trust_remote_code=True
+    )
+
+    streamer = TextIteratorStreamer(
+        tokenizer, skip_prompt=True, skip_special_tokens=True
+    )
 
 embedding_model = load_embedding_model('all-MiniLM-L6-v2')
 
-streamer = TextIteratorStreamer(
-    tokenizer, skip_prompt=True, skip_special_tokens=True
-)
 
 CONTEXT_LENGTH = 3800 # This uses around 9.9GB of GPU memory when highest context length is reached.
 
 documents = None
 results = []
 
-def generate_next_tokens(user_input, history):
+def generate_next_tokens(user_input, history, chat_model_id):
     global documents
     global results
+    global model_id
+
+    if chat_model_id != model_id:
+        load_llm(chat_model_id)
+        model_id = chat_model_id
 
     # print(f"User Input: ", user_input)
     # print('History: ', history)
@@ -145,7 +158,22 @@ def main():
     iface = gr.ChatInterface(
         fn=generate_next_tokens, 
         multimodal=True,
-        title='File Chat'
+        title='File Chat',
+        additional_inputs=[
+            gr.Dropdown(
+                choices=[
+                    'microsoft/Phi-3-mini-4k-instruct',
+                    'microsoft/Phi-3-small-8k-instruct',
+                    'microsoft/Phi-3-medium-4k-instruct',
+                    'microsoft/Phi-3-mini-128k-instruct',
+                    'microsoft/Phi-3-small-128k-instruct',
+                    'microsoft/Phi-3-medium-128k-instruct',
+                ],
+                label='Select Model',
+                value='microsoft/Phi-3-mini-128k-instruct'
+            )
+        ],
+        theme=gr.themes.Soft(primary_hue='orange', secondary_hue='gray')
     )
     
     iface.launch()
