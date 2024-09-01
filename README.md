@@ -18,7 +18,7 @@ It will install the the requirements from the `requirements.txt` file.
 
 ## Updates
 
-* August 10, 2024: Added `ui.py` to the `src` directory for interactive Gradio UI chat. You can select an indexed JSON file to chat with it. See the following steps to create an embedding JSON file.
+* September 1, 2024: Now you can upload PDFs directly to the Gradio UI (`python ui.py`) and start chatting.
 
 ## Steps to Chat with Any PDF in Graio UI
 
