@@ -35,7 +35,7 @@ It will install the the requirements from the `requirements.txt` file.
   * Generate example:
 
     ```
-    python create_embeddings.py --index-file-name my_index_file.json --directory-path path/to/directory
+    python create_embeddings.py --index-file-name index_file_to_store_embeddings.json --directory-path path/to/directory/containing/files/to/embed
     ```
 
   * Additional command line arguments:

@@ -30,7 +30,8 @@ def parse_opt():
     parser.add_argument(
         '--index-file-name',
         dest='index_file_name',
-        help='file name for the index JSON file',
+        help='file name for the index JSON file to be stored, ' \
+             'will be stored in ../data directory by default',
         required=True
     )
     parser.add_argument(
