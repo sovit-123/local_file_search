@@ -2,6 +2,7 @@ import gradio as gr
 import json
 import os
 import threading
+import argparse
 
 from transformers import (
     AutoModelForCausalLM, 
@@ -12,6 +13,13 @@ from transformers import (
 from search import load_documents, load_embedding_model
 from search import main as search_main
 from create_embeddings import load_and_preprocess_text_files
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    '--share',
+    action='store_true'
+)
+args = parser.parse_args()
 
 device = 'cuda'
 
@@ -162,21 +170,20 @@ def main():
         additional_inputs=[
             gr.Dropdown(
                 choices=[
-                    'microsoft/Phi-3-mini-4k-instruct',
+                    'microsoft/Phi-3.5-mini-instruct',
                     'microsoft/Phi-3-small-8k-instruct',
                     'microsoft/Phi-3-medium-4k-instruct',
-                    'microsoft/Phi-3-mini-128k-instruct',
                     'microsoft/Phi-3-small-128k-instruct',
                     'microsoft/Phi-3-medium-128k-instruct',
                 ],
                 label='Select Model',
-                value='microsoft/Phi-3-mini-128k-instruct'
+                value='microsoft/Phi-3.5-mini-instruct'
             )
         ],
         theme=gr.themes.Soft(primary_hue='orange', secondary_hue='gray')
     )
     
-    iface.launch()
+    iface.launch(share=args.share)
 
 if __name__ == '__main__':
     main()
