@@ -198,11 +198,11 @@ def generate_next_tokens(user_input, history, chat_model_id):
             max_new_tokens=1024,
         )   
 
-    # A way to manage context length + memory for best results.
-    # print('Global context length till now: ', input_ids.shape[1])
-    # if input_ids.shape[1] > CONTEXT_LENGTH:
-    #     input_ids = input_ids[:, -CONTEXT_LENGTH:]
-    #     attention_mask = attention_mask[:, -CONTEXT_LENGTH:]
+        # A way to manage context length + memory for best results.
+        print('Global context length till now: ', input_ids.shape[1])
+        if input_ids.shape[1] > CONTEXT_LENGTH:
+            input_ids = input_ids[:, -CONTEXT_LENGTH:]
+            attention_mask = attention_mask[:, -CONTEXT_LENGTH:]
 
     print('-' * 100)
 
