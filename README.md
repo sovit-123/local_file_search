@@ -18,6 +18,8 @@ It will install the the requirements from the `requirements.txt` file.
 
 ## Updates
 
+* September 4, 2024: Added image, PDF, and text file chat to `ui.py` with multiple Phi model options.
+
 * September 1, 2024: Now you can upload PDFs directly to the Gradio UI (`python ui.py`) and start chatting.
 
 ## Steps to Chat with Any PDF in Graio UI
