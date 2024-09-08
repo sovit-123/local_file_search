@@ -122,12 +122,19 @@ def generate_next_tokens(user_input, history, chat_model_id):
                 file_path.endswith('.txt'):
                 results = load_and_preprocess_text_files(
                     results,
-                file_path,
-                add_file_content=True,
-                chunk_size=128,
-                overlap=16,
-                model=embedding_model
-            )
+                    file_path,
+                    add_file_content=True,
+                    chunk_size=128,
+                    overlap=16,
+                    model=embedding_model
+                )
+
+                embedded_docs = [result for result in results]
+                # Save documents with embeddings to a JSON file.
+                with open(os.path.join('..', 'data', 'temp.json'), 'w') as f:
+                    json.dump(embedded_docs, f)
+                
+                documents = load_documents(os.path.join('..', 'data', 'temp.json'))
         
     if chat_model_id == 'microsoft/Phi-3.5-vision-instruct' and len(images) == 0:
         counter = 0
@@ -143,13 +150,6 @@ def generate_next_tokens(user_input, history, chat_model_id):
                 )
                 images.append(image)
                 placeholder += f"<|image_{counter}|>\n"
-
-        embedded_docs = [result for result in results]
-        # Save documents with embeddings to a JSON file.
-        with open(os.path.join('..', 'data', 'temp.json'), 'w') as f:
-            json.dump(embedded_docs, f)
-        
-        documents = load_documents(os.path.join('..', 'data', 'temp.json'))
 
     if chat_model_id == 'microsoft/Phi-3.5-vision-instruct' and len(images) == 0:
         gr.Warning(
@@ -178,18 +178,9 @@ def generate_next_tokens(user_input, history, chat_model_id):
     final_input = ''
     user_text = user_input['text']
 
-    # Get the context.
-    context_list = search_main(
-        documents, 
-        user_text, 
-        embedding_model,
-        extract_content=True,
-        topk=3
-    )
-    context = '\n\n'.join(context_list)
-    final_input += user_text + '\n' + 'Answer the above question based on the following context:\n' + context
 
     if len(images) != 0:
+        final_input += placeholder+user_text
         chat = [
             {'role': 'user', 'content': placeholder+user_text},
         ]
@@ -199,6 +190,16 @@ def generate_next_tokens(user_input, history, chat_model_id):
             add_generation_prompt=True
         )
     else:
+        # Get the context.
+        context_list = search_main(
+            documents, 
+            user_text, 
+            embedding_model,
+            extract_content=True,
+            topk=3
+        )
+        context = '\n\n'.join(context_list)
+        final_input += user_text + '\n' + 'Answer the above question based on the following context:\n' + context
         chat = [
             {'role': 'user', 'content': 'Hi'},
             {'role': 'assistant', 'content': 'Hello.'},
