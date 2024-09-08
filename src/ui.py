@@ -3,6 +3,7 @@ import json
 import os
 import threading
 import argparse
+import cv2
 
 from transformers import (
     AutoModelForCausalLM, 
@@ -68,10 +69,23 @@ def load_and_preprocess_images(image_path):
     image = Image.open(image_path)
     return image
 
+def load_and_process_videos(file_path, images, placeholder, counter):
+    cap = cv2.VideoCapture(file_path)
+    length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    for i in range(length):
+        counter += 1
+        cap.set(cv2.CAP_PROP_POS_FRAMES, i)
+        ret, frame = cap.read()
+        image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        images.append(Image.fromarray(image))
+        placeholder += f"<|image_{counter}|>\n"
+    return images, placeholder, counter
+
 embedding_model = load_embedding_model('all-MiniLM-L6-v2')
 
 
 CONTEXT_LENGTH = 3800 # This uses around 9.9GB of GPU memory when highest context length is reached.
+GLOBAL_IMAGE_LIST = []
 
 documents = None
 results = []
@@ -84,30 +98,58 @@ def generate_next_tokens(user_input, history, chat_model_id):
     # If a new PDF file is uploaded, create embeddings, store in `temp.json`
     # and load the embedding file.
     images = []
+    placeholder = ''
+
     if len(user_input['files']) != 0:
-        if user_input['files'][0].endswith('.jpg') \
-            or user_input['files'][0].endswith('.png') \
-            or user_input['files'][0].endswith('.jpeg'):
-            image = load_and_preprocess_images(
-                user_input['files'][0]
-            )
-            images.append(image)
-            placeholder = f"<|image_1|>\n"
-        else:
-            results = load_and_preprocess_text_files(
-                results,
-            user_input['files'][0],
-            add_file_content=True,
-            chunk_size=128,
-            overlap=16,
-            model=embedding_model
-        )
-        embedded_docs = [result for result in results]
-        # Save documents with embeddings to a JSON file.
-        with open(os.path.join('..', 'data', 'temp.json'), 'w') as f:
-            json.dump(embedded_docs, f)
+        for file_path in user_input['files']:
+            counter = 0
+            if file_path.endswith('.mp4'):
+                GLOBAL_IMAGE_LIST.append(file_path)
+                images, placeholder, counter = load_and_process_videos(
+                    file_path, images, placeholder, counter
+                )
+            elif file_path.endswith('.jpg') or \
+                file_path.endswith('.png') or \
+                file_path.endswith('.jpeg'):
+                counter += 1
+                GLOBAL_IMAGE_LIST.append(file_path)
+                image = load_and_preprocess_images(
+                    file_path
+                )
+                images.append(image)
+                placeholder += f"<|image_{counter}|>\n"
+            elif file_path.endswith('.pdf') or \
+                file_path.endswith('.txt'):
+                results = load_and_preprocess_text_files(
+                    results,
+                    file_path,
+                    add_file_content=True,
+                    chunk_size=128,
+                    overlap=16,
+                    model=embedding_model
+                )
+
+                embedded_docs = [result for result in results]
+                # Save documents with embeddings to a JSON file.
+                with open(os.path.join('..', 'data', 'temp.json'), 'w') as f:
+                    json.dump(embedded_docs, f)
+                
+                documents = load_documents(os.path.join('..', 'data', 'temp.json'))
         
-        documents = load_documents(os.path.join('..', 'data', 'temp.json'))
+    if chat_model_id == 'microsoft/Phi-3.5-vision-instruct' and len(images) == 0:
+        counter = 0
+        for i, file_path in enumerate(GLOBAL_IMAGE_LIST):
+            if file_path.endswith('.mp4'):
+                images, placeholder, counter = load_and_process_videos(
+                    file_path, images, placeholder, counter
+                )
+            else:
+                counter += 1
+                image = load_and_preprocess_images(
+                    file_path
+                )
+                images.append(image)
+                placeholder += f"<|image_{counter}|>\n"
 
     if chat_model_id == 'microsoft/Phi-3.5-vision-instruct' and len(images) == 0:
         gr.Warning(
@@ -136,18 +178,9 @@ def generate_next_tokens(user_input, history, chat_model_id):
     final_input = ''
     user_text = user_input['text']
 
-    # Get the context.
-    context_list = search_main(
-        documents, 
-        user_text, 
-        embedding_model,
-        extract_content=True,
-        topk=3
-    )
-    context = '\n\n'.join(context_list)
-    final_input += user_text + '\n' + 'Answer the above question based on the following context:\n' + context
 
     if len(images) != 0:
+        final_input += placeholder+user_text
         chat = [
             {'role': 'user', 'content': placeholder+user_text},
         ]
@@ -157,6 +190,16 @@ def generate_next_tokens(user_input, history, chat_model_id):
             add_generation_prompt=True
         )
     else:
+        # Get the context.
+        context_list = search_main(
+            documents, 
+            user_text, 
+            embedding_model,
+            extract_content=True,
+            topk=3
+        )
+        context = '\n\n'.join(context_list)
+        final_input += user_text + '\n' + 'Answer the above question based on the following context:\n' + context
         chat = [
             {'role': 'user', 'content': 'Hi'},
             {'role': 'assistant', 'content': 'Hello.'},
@@ -184,11 +227,12 @@ def generate_next_tokens(user_input, history, chat_model_id):
 
     if len(images) != 0:
         inputs = processor(prompt, images, return_tensors='pt').to(device)
-        generate_kwargs = { 
-            "max_new_tokens": 500, 
-            "temperature": 0.0, 
-            "do_sample": False, 
-        } 
+        generate_kwargs = dict(
+            **inputs,
+            eos_token_id=processor.tokenizer.eos_token_id, 
+            streamer=streamer,
+            max_new_tokens=1024,
+        )   
     else:
         inputs = tokenizer(prompt, return_tensors='pt').to(device)
         input_ids, attention_mask = inputs.input_ids, inputs.attention_mask
@@ -207,19 +251,19 @@ def generate_next_tokens(user_input, history, chat_model_id):
     print('-' * 100)
 
     if len(images) != 0:
-        generate_ids = model.generate(
-            **inputs, 
-            eos_token_id=processor.tokenizer.eos_token_id, 
-            **generate_kwargs
-        ) 
-        generate_ids = generate_ids[:, inputs['input_ids'].shape[1]:]
-        final_output = processor.batch_decode(
-            generate_ids, 
-            skip_special_tokens=True, 
-            clean_up_tokenization_spaces=False
-        )[0] 
-        print('Final Output: ', final_output)
-        yield final_output
+        thread = threading.Thread(
+            target=model.generate, 
+            kwargs=generate_kwargs
+        )
+        thread.start()
+
+        outputs = []
+        for new_token in streamer:
+            outputs.append(new_token)
+            final_output = ''.join(outputs)
+
+            yield final_output
+
     else:
         thread = threading.Thread(
             target=model.generate, 
