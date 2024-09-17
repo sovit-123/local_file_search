@@ -135,6 +135,8 @@ def generate_next_tokens(user_input, history, chat_model_id):
                     json.dump(embedded_docs, f)
                 
                 documents = load_documents(os.path.join('..', 'data', 'temp.json'))
+            elif file_path.endswith('.json'): # Load an indexed file directly.
+                documents = load_documents(os.path.join('..', 'data', 'temp.json'))
         
     if chat_model_id == 'microsoft/Phi-3.5-vision-instruct' and len(images) == 0:
         counter = 0
