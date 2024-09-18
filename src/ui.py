@@ -193,15 +193,18 @@ def generate_next_tokens(user_input, history, chat_model_id):
         )
     else:
         # Get the context.
-        context_list = search_main(
-            documents, 
-            user_text, 
-            embedding_model,
-            extract_content=True,
-            topk=3
-        )
+        if documents == None: # Bypass if no document is uploaded.
+            context_list = []
+        else:
+            context_list = search_main(
+                documents, 
+                user_text, 
+                embedding_model,
+                extract_content=True,
+                topk=3
+            )
         context = '\n\n'.join(context_list)
-        final_input += user_text + '\n' + 'Answer the above question based on the following context:\n' + context
+        final_input += user_text + '\n' + 'Answer the above question based on the following context. If the context is empty, then just chat normally:\n' + context
         chat = [
             {'role': 'user', 'content': 'Hi'},
             {'role': 'assistant', 'content': 'Hello.'},
@@ -216,7 +219,7 @@ def generate_next_tokens(user_input, history, chat_model_id):
     # Loading from Gradio's `history` list. If a file was uploaded in the 
     # previous turn, only the file path remains in the history and not the 
     # content. Good for saving memory (context) but bad for detailed querying.
-    if len(history) == 0 or len(images) != 0:
+    if len(history) == 0 and len(images) != 0:
         prompt = '<s>' + template
     else:
         prompt = '<s>'
