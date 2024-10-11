@@ -20,7 +20,16 @@ from PIL import Image
 parser = argparse.ArgumentParser()
 parser.add_argument(
     '--share',
+    help='create a shareable gradio link',
     action='store_true'
+)
+parser.add_argument(
+    '--json',
+    help='optional json file path if you have already embedded hundreds of files, \
+          helps because you do not need to upload the json file to the ui, \
+          if json file path is provided, it takes precedence compared to \
+          uploading any other file',
+    default=None
 )
 args = parser.parse_args()
 
@@ -100,43 +109,49 @@ def generate_next_tokens(user_input, history, chat_model_id):
     images = []
     placeholder = ''
 
-    if len(user_input['files']) != 0:
-        for file_path in user_input['files']:
-            counter = 0
-            if file_path.endswith('.mp4'):
-                GLOBAL_IMAGE_LIST.append(file_path)
-                images, placeholder, counter = load_and_process_videos(
-                    file_path, images, placeholder, counter
-                )
-            elif file_path.endswith('.jpg') or \
-                file_path.endswith('.png') or \
-                file_path.endswith('.jpeg'):
-                counter += 1
-                GLOBAL_IMAGE_LIST.append(file_path)
-                image = load_and_preprocess_images(
-                    file_path
-                )
-                images.append(image)
-                placeholder += f"<|image_{counter}|>\n"
-            elif file_path.endswith('.pdf') or \
-                file_path.endswith('.txt'):
-                results = load_and_preprocess_text_files(
-                    results,
-                    file_path,
-                    add_file_content=True,
-                    chunk_size=128,
-                    overlap=16,
-                    model=embedding_model
-                )
+    # If a JSON file path is passed in the arguments.
+    if args.json is not None:
+        print('Loading JSON')
+        documents = load_documents(os.path.join(args.json))
+    # Else load whatever file is uploaded.
+    else:
+        if len(user_input['files']) != 0:
+            for file_path in user_input['files']:
+                counter = 0
+                if file_path.endswith('.mp4'):
+                    GLOBAL_IMAGE_LIST.append(file_path)
+                    images, placeholder, counter = load_and_process_videos(
+                        file_path, images, placeholder, counter
+                    )
+                elif file_path.endswith('.jpg') or \
+                    file_path.endswith('.png') or \
+                    file_path.endswith('.jpeg'):
+                    counter += 1
+                    GLOBAL_IMAGE_LIST.append(file_path)
+                    image = load_and_preprocess_images(
+                        file_path
+                    )
+                    images.append(image)
+                    placeholder += f"<|image_{counter}|>\n"
+                elif file_path.endswith('.pdf') or \
+                    file_path.endswith('.txt'):
+                    results = load_and_preprocess_text_files(
+                        results,
+                        file_path,
+                        add_file_content=True,
+                        chunk_size=128,
+                        overlap=16,
+                        model=embedding_model
+                    )
 
-                embedded_docs = [result for result in results]
-                # Save documents with embeddings to a JSON file.
-                with open(os.path.join('..', 'data', 'temp.json'), 'w') as f:
-                    json.dump(embedded_docs, f)
-                
-                documents = load_documents(os.path.join('..', 'data', 'temp.json'))
-            elif file_path.endswith('.json'): # Load an indexed file directly.
-                documents = load_documents(os.path.join('..', 'data', 'temp.json'))
+                    embedded_docs = [result for result in results]
+                    # Save documents with embeddings to a JSON file.
+                    with open(os.path.join('..', 'data', 'temp.json'), 'w') as f:
+                        json.dump(embedded_docs, f)
+                    
+                    documents = load_documents(os.path.join('..', 'data', 'temp.json'))
+                elif file_path.endswith('.json'): # Load an indexed file directly.
+                    documents = load_documents(os.path.join('..', 'data', 'temp.json'))
         
     if chat_model_id == 'microsoft/Phi-3.5-vision-instruct' and len(images) == 0:
         counter = 0
