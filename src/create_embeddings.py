@@ -17,7 +17,7 @@ from tqdm.auto import tqdm
 from pypdf import PdfReader
 from joblib import Parallel, delayed
 
-# multiprocessing.set_start_method('spawn', force=True)
+multiprocessing.set_start_method('spawn', force=True)
 
 def parse_opt():
     parser = argparse.ArgumentParser()
