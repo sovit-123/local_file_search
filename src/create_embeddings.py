@@ -197,8 +197,6 @@ if __name__ == '__main__':
 
     model = load_model(args.model)
 
-    results = []
-
     all_files = glob.glob(os.path.join(args.directory_path, '**'), recursive=True)
     all_files = [filename for filename in all_files if not os.path.isdir(filename)]
     print(all_files)
@@ -208,21 +206,34 @@ if __name__ == '__main__':
     else:
         files_to_embed = all_files
 
-    results = Parallel(
-        n_jobs=args.njobs, 
-        backend='multiprocessing'
-    )(delayed(load_and_preprocess_text_files)(
-        results, 
-        filename, 
-        args.add_file_content,
-        args.chunk_size,
-        args.overlap,
-        model
-    ) \
-            for filename in tqdm(files_to_embed, total=len(files_to_embed))
-        )
-    
-    documents = [res for result in results for res in result]
+    if args.njobs == 1:
+        # Single-threaded execution.
+        results = []
+        for filename in tqdm(files_to_embed, total=len(files_to_embed)):
+            results.append(load_and_preprocess_text_files(
+                documents=[], # Start with an empty list.
+                filename=filename,
+                add_file_content=args.add_file_content,
+                chunk_size=args.chunk_size,
+                overlap=args.overlap,
+                model=model
+            ))
+        documents = [res for result in results for res in result]
+    else:
+        # Parallel execution.
+        results = Parallel(
+            n_jobs=args.njobs, 
+            backend='multiprocessing'
+        )(delayed(load_and_preprocess_text_files)(
+            documents=[], # Start with an empty list.  
+            filename=filename, 
+            add_file_content=args.add_file_content,
+            chunk_size=args.chunk_size,
+            overlap=args.overlap,
+            model=model
+        ) for filename in tqdm(files_to_embed, total=len(files_to_embed)))
+        
+        documents = [res for result in results for res in result]
     
     # Save documents with embeddings to a JSON file
     with open(os.path.join('..', 'data', args.index_file_name), 'w') as f:
