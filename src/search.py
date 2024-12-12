@@ -143,6 +143,7 @@ if __name__ == '__main__':
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
     RED = "\033[31m"
+    GREEN = "\033[32m"
     RESET = "\033[0m"
 
     args = parser_opt()
@@ -178,6 +179,7 @@ if __name__ == '__main__':
         context_list = main(documents, query, embedding_model, extract_content, topk)
     
         if args.llm_call:
+            print(f"\n{GREEN}Generating LLM response...\n{RESET}")
             context = '\n\n'.join(context_list)
         
             generate_next_tokens(
