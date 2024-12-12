@@ -163,10 +163,10 @@ if __name__ == '__main__':
         )
 
         tokenizer = AutoTokenizer.from_pretrained(
-            'microsoft/Phi-3-mini-4k-instruct', trust_remote_code=True
+            'microsoft/Phi-3.5-mini-instruct', trust_remote_code=True
         )
         llm_model = AutoModelForCausalLM.from_pretrained(
-            'microsoft/Phi-3-mini-4k-instruct',
+            'microsoft/Phi-3.5-mini-instruct',
             quantization_config=quant_config,
             device_map=device,
             trust_remote_code=True
