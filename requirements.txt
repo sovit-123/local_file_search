@@ -9,13 +9,13 @@ joblib==1.4.2
 sentence-transformers==3.3.1
 tqdm==4.66.4
 pandas==2.2.2
-pypdf==4.3.0
+pypdf==5.1.0
 flash-attn==2.7.2.post1
 gradio==5.0.2
 numpy==2.2.0
 tiktoken==0.8.0
 pytest==8.3.2
 opencv-python
-fastapi==0.112.2
-pydantic==2.8.2
-pydantic-core==2.20.1
+fastapi==0.115.6
+pydantic==2.10.3
+pydantic-core==2.27.1
