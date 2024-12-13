@@ -17,6 +17,7 @@ from transformers import (
     AutoTokenizer, 
     BitsAndBytesConfig
 )
+from utils import MyTextStreamer
 
 def parser_opt():
     parser = argparse.ArgumentParser()
@@ -172,6 +173,9 @@ if __name__ == '__main__':
             device_map=device,
             trust_remote_code=True
         )
+        streamer = MyTextStreamer(
+            tokenizer=tokenizer, skip_prompt=True, skip_special_tokens=True
+        )
 
     # Keep on asking the user prompt until the user exits.
     while True:
@@ -187,5 +191,6 @@ if __name__ == '__main__':
                 context=context,
                 model=llm_model,
                 tokenizer=tokenizer,
+                streamer=streamer,
                 device=device 
             )

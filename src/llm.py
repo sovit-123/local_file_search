@@ -10,7 +10,9 @@ RESET = "\033[0m"
 
 history = ''
 
-def generate_next_tokens(user_input, context, model, tokenizer, device):
+def generate_next_tokens(
+    user_input, context, model, tokenizer, streamer, device
+):
     global history
 
     # print('History: ', history)
@@ -49,7 +51,8 @@ def generate_next_tokens(user_input, context, model, tokenizer, device):
     print('-' * 100)
 
     generate_kwargs = {
-        "max_new_tokens": 1024
+        "max_new_tokens": 1024, 
+        "streamer": streamer
     }
 
     outputs = model.generate(**inputs, **generate_kwargs)
@@ -61,7 +64,7 @@ def generate_next_tokens(user_input, context, model, tokenizer, device):
     else:
         history = f"{template}{answer}<|end|>\n<|user|>\n"
 
-    print(f"\n{YELLOW}{answer}{RESET}")
+    # print(f"\n{YELLOW}{answer}{RESET}")
 
 if __name__ == '__main__':
     from transformers import (
