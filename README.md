@@ -9,8 +9,11 @@ From scratch implementation, ***no Vector DBs yet.***
 
 https://github.com/user-attachments/assets/0b1bfc91-868b-4aa7-80ba-9e0a730c4b4b
 
-
 ## Setup
+
+Before moving forward with any of the installation steps, ensure that you have CUDA > 12.1 installed globally on your system. Necessary for building Flash Attention.
+
+### Ubuntu
 
 Run the following in terminal in your preferred virtual/conda environment.
 
@@ -19,6 +22,20 @@ sh setup.sh
 ```
 
 It will install the the requirements from the `requirements.txt` file.
+
+### Windows
+
+Install the required version of PyTorch first, preferably the latest stable supported by this repository. This is a necessary step to build Flash Attention correctly on Windows.
+
+```
+pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1
+```
+
+Next install rest of the requirements.
+
+```
+pip install -r requirements.txt
+```
 
 ## Updates
 
