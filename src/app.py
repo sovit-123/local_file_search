@@ -41,7 +41,7 @@ tokenizer = None
 streamer = None
 processor = None
 
-def load_llm(chat_model_id):
+def load_llm(chat_model_id, fp16):
     global model
     global tokenizer
     global streamer
@@ -66,7 +66,7 @@ def load_llm(chat_model_id):
     
     model = AutoModelForCausalLM.from_pretrained(
         chat_model_id,
-        quantization_config=quant_config,
+        quantization_config=quant_config if not fp16 else None,
         device_map=device,
         trust_remote_code=True,
         _attn_implementation='eager'
@@ -107,7 +107,8 @@ def generate_next_tokens(
     chat_model_id, 
     chunk_size, 
     overlap, 
-    num_chunks_to_retrieve
+    num_chunks_to_retrieve,
+    fp16
 ):
     """
     :param user_input: current user input
@@ -116,7 +117,9 @@ def generate_next_tokens(
     :param chunk_size: chunk size to create embeddings when uploading a new
         pdf or text file
     :param overlap: overlap when creating embeddings
-    :param num_chunks_to_retrieve: number of chunks to retrieve 
+    :param num_chunks_to_retrieve: number of chunks to retrieve
+    :param fp16: whether to load model in fp16, 
+        doing so does not quantize the model
     """
     global documents
     global results
@@ -202,7 +205,7 @@ def generate_next_tokens(
         )
 
     if chat_model_id != model_id:
-        load_llm(chat_model_id)
+        load_llm(chat_model_id, fp16=fp16)
         model_id = chat_model_id
 
     # print(f"User Input: ", user_input)
@@ -356,6 +359,10 @@ def main():
                 value=3,
                 step=1, 
                 label='Number of top chunks to retrieve'
+            ),
+            gr.Checkbox(
+                value=False, 
+                label='FP16 (Enabling does not load model in 4-bit)'
             )
         ],
         theme=gr.themes.Soft(primary_hue='orange', secondary_hue='gray')
