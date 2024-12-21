@@ -99,7 +99,23 @@ GLOBAL_IMAGE_LIST = []
 documents = None
 results = []
 
-def generate_next_tokens(user_input, history, chat_model_id):
+def generate_next_tokens(
+    user_input, 
+    history, 
+    chat_model_id, 
+    chunk_size, 
+    overlap, 
+    num_chunks_to_retrieve
+):
+    """
+    :param user_input: current user input
+    :param history: chat history, a list maintained by gradio chat interface
+    :param chat_model_id: hugging face model id
+    :param chunk_size: chunk size to create embeddings when uploading a new
+        pdf or text file
+    :param overlap: overlap when creating embeddings
+    :param num_chunks_to_retrieve: number of chunks to retrieve 
+    """
     global documents
     global results
     global model_id
@@ -139,8 +155,8 @@ def generate_next_tokens(user_input, history, chat_model_id):
                         results,
                         file_path,
                         add_file_content=True,
-                        chunk_size=128,
-                        overlap=16,
+                        chunk_size=int(chunk_size),
+                        overlap=int(overlap),
                         model=embedding_model
                     )
 
@@ -216,7 +232,7 @@ def generate_next_tokens(user_input, history, chat_model_id):
                 user_text, 
                 embedding_model,
                 extract_content=True,
-                topk=3
+                topk=int(num_chunks_to_retrieve)
             )
         context = '\n\n'.join(context_list)
         final_input += user_text + '\n' + 'Answer the above question based on the following context. If the context is empty, then just chat normally:\n' + context
@@ -304,7 +320,7 @@ def main():
     iface = gr.ChatInterface(
         fn=generate_next_tokens, 
         multimodal=True,
-        title='Image, PDF, and Text Chat with Phi Models',
+        title='Image, Video, PDF, and Text Chat with Phi Models',
         additional_inputs=[
             gr.Dropdown(
                 choices=[
@@ -317,6 +333,27 @@ def main():
                 ],
                 label='Select Model',
                 value='microsoft/Phi-3.5-mini-instruct'
+            ),
+            gr.Slider(
+                minimum=64,
+                maximum=1024,
+                value=128,
+                step=1,
+                label='Chunk size when creating embeddings'
+            ),
+            gr.Slider(
+                minimum=0,
+                maximum=1024,
+                value=0,
+                step=1,
+                label='Text overlap when creating embeddings'
+            ),
+            gr.Slider(
+                minimum=1,
+                maximum=1000,
+                value=3,
+                step=1, 
+                label='Number of top chunks to retrieve'
             )
         ],
         theme=gr.themes.Soft(primary_hue='orange', secondary_hue='gray')
