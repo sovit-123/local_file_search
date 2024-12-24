@@ -10,6 +10,9 @@ class MyTextStreamer(TextStreamer):
     """
     # Override method.
     def on_finalized_text(self, text, stream_end = False):
-        """Prints the new text to stdout. If the stream is ending, also prints a newline."""
+        """
+        Prints the new text to stdout. 
+        If the stream is ending, also prints a newline.
+        """
         # print(text, flush=True, end="" if not stream_end else None)
         print(f"{YELLOW}{text}{RESET}", flush=True, end="" if not stream_end else None)

@@ -3,7 +3,6 @@ import json
 import os
 import threading
 import argparse
-import cv2
 
 from transformers import (
     AutoModelForCausalLM, 
@@ -15,7 +14,9 @@ from transformers import (
 from search import load_documents, load_embedding_model
 from search import main as search_main
 from create_embeddings import load_and_preprocess_text_files
-from PIL import Image
+from utils.app_utils import (
+    load_and_preprocess_images, load_and_process_videos
+)
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -75,22 +76,6 @@ def load_llm(chat_model_id, fp16):
     streamer = TextIteratorStreamer(
         tokenizer, skip_prompt=True, skip_special_tokens=True
     )
-
-def load_and_preprocess_images(image_path):
-    image = Image.open(image_path)
-    return image
-
-def load_and_process_videos(file_path, images, placeholder, counter):
-    cap = cv2.VideoCapture(file_path)
-    length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    for i in range(length):
-        counter += 1
-        cap.set(cv2.CAP_PROP_POS_FRAMES, i)
-        ret, frame = cap.read()
-        image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        images.append(Image.fromarray(image))
-        placeholder += f"<|image_{counter}|>\n"
-    return images, placeholder, counter
 
 embedding_model = load_embedding_model('all-MiniLM-L6-v2')
 
