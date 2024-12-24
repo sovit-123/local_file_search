@@ -1,6 +1,6 @@
 data/*
 !data/readme.txt
-src/outputs
-src/wandb
+tools/outputs
+tools/wandb
 
 __pycache__

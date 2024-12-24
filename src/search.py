@@ -17,7 +17,7 @@ from transformers import (
     AutoTokenizer, 
     BitsAndBytesConfig
 )
-from utils import MyTextStreamer
+from utils.general import MyTextStreamer
 
 def parser_opt():
     parser = argparse.ArgumentParser()
