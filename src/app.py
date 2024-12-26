@@ -93,7 +93,7 @@ def load_embedding_model(embedding_model_id):
     gr.Info(f"Loading Embedding model: {embedding_model_id}")
     embedding_model = SentenceTransformer(embedding_model_id)
 
-CONTEXT_LENGTH = 3800 # This uses around 9.9GB of GPU memory when highest context length is reached.
+
 GLOBAL_IMAGE_LIST = []
 
 documents = None
@@ -107,7 +107,8 @@ def generate_next_tokens(
     chunk_size, 
     overlap, 
     num_chunks_to_retrieve,
-    fp16
+    fp16,
+    CONTEXT_LENGTH
 ):
     """
     :param user_input: current user input
@@ -281,17 +282,19 @@ def generate_next_tokens(
     else:
         inputs = tokenizer(prompt, return_tensors='pt').to(device)
         input_ids, attention_mask = inputs.input_ids, inputs.attention_mask
+
+        # A way to manage context length + memory for best results.
+        print('Global context length till now: ', input_ids.shape[1])
+        if input_ids.shape[1] > int(CONTEXT_LENGTH):
+            print('Truncating context...')
+            input_ids = input_ids[:, -(int(CONTEXT_LENGTH)):]
+            attention_mask = attention_mask[:, -(int(CONTEXT_LENGTH)):]
+
         generate_kwargs = dict(
             {'input_ids': input_ids.to(device), 'attention_mask': attention_mask.to(device)},
             streamer=streamer,
             max_new_tokens=1024,
         )   
-
-        # A way to manage context length + memory for best results.
-        print('Global context length till now: ', input_ids.shape[1])
-        if input_ids.shape[1] > CONTEXT_LENGTH:
-            input_ids = input_ids[:, -CONTEXT_LENGTH:]
-            attention_mask = attention_mask[:, -CONTEXT_LENGTH:]
 
     print('-' * 100)
 
@@ -376,6 +379,14 @@ def main():
             gr.Checkbox(
                 value=False, 
                 label='FP16 (Enabling does not load model in 4-bit)'
+            ),
+            gr.Slider(
+                minimum=1000,
+                maximum=128000,
+                value=3500,
+                step=1,
+                label='Context length.',
+                info='A context length of 3500 uses around 9.5GB of VRAM.'
             )
         ],
         theme=gr.themes.Soft(primary_hue='orange', secondary_hue='gray')
