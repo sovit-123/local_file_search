@@ -223,6 +223,7 @@ def generate_next_tokens(
 
 
     if len(images) != 0:
+        context = ''
         final_input += placeholder+user_text
         chat = [
             {'role': 'user', 'content': placeholder+user_text},
@@ -245,7 +246,14 @@ def generate_next_tokens(
                 topk=int(num_chunks_to_retrieve)
             )
         context = '\n\n'.join(context_list)
-        final_input += user_text + '\n' + 'Answer the above question based on the following context. If the context is empty, then just chat normally:\n' + context
+        # final_input += user_text + '\n' + 'Answer the above question based on the following context. If the context is empty, then just chat normally:\nCONTEXT:\n' + context
+        final_input += (f"{user_text}" 
+                        f"\nAnswer the above question based on the following context."
+                        f" If the context does not contain the information,"
+                        f" then answer 'The retrieved content does not contain any reference'."
+                        f" If the context is empty, then just chat normally."
+                        f"\nCONTEXT:\n{context}"
+                    )
         chat = [
             {'role': 'user', 'content': 'Hi'},
             {'role': 'assistant', 'content': 'Hello.'},
@@ -310,7 +318,7 @@ def generate_next_tokens(
             outputs.append(new_token)
             final_output = ''.join(outputs)
 
-            yield final_output, 'no'
+            yield final_output, context
 
     else:
         thread = threading.Thread(
@@ -325,7 +333,7 @@ def generate_next_tokens(
             outputs.append(new_token)
             final_output = ''.join(outputs)
 
-            yield final_output, 'no'
+            yield final_output, context
 
 
 def main():
@@ -343,7 +351,7 @@ def main():
                 'microsoft/Phi-3-medium-128k-instruct',
                 'microsoft/Phi-3.5-vision-instruct'
             ],
-            label='Select Chat Model',
+            label='Chat Model',
             value='microsoft/Phi-3.5-mini-instruct',
             render=False
         )
@@ -354,7 +362,7 @@ def main():
                 'multi-qa-MiniLM-L6-cos-v1',
                 'multi-qa-mpnet-base-dot-v1',
             ],
-            label='Select Embedding Model',
+            label='Embedding Model',
             value='all-MiniLM-L6-v2',
             render=False
         )
@@ -364,8 +372,10 @@ def main():
             maximum=1024,
             value=128,
             step=1,
-            label='Chunk size when creating embeddings',
-            render=False
+            label='Chunk size',
+            render=False,
+            info=('Only used when uploading a PDF file or text file.'
+                  ' Not used when using embedded JSON file directly.')
         )
 
         chunk_overlap = gr.Slider(
@@ -373,7 +383,9 @@ def main():
             maximum=1024,
             value=0,
             step=1,
-            label='Text overlap when creating embeddings',
+            label='Text overlap',
+            info=('Only used when uploading a PDF file or text file.'
+                  ' Not used when using embedded JSON file directly.'),
             render=False
         )
 
@@ -382,13 +394,14 @@ def main():
             maximum=1000,
             value=3,
             step=1, 
-            label='Number of top chunks to retrieve',
+            label='TopK chunks',
             render=False
         )
 
         llm_fp16 = gr.Checkbox(
             value=False, 
-            label='FP16 (Enabling does not load model in 4-bit)',
+            label='FP16',
+            info='(Enabling does not load model in 4-bit)',
             render=False
         )
 
@@ -402,7 +415,11 @@ def main():
             render=False
         )
 
-        out = gr.Text(render=False)
+        # Text box to display retrieved context.
+        retrieved_context_box = gr.Text(
+            label='Top chunks retrieved',
+            render=False
+        )
 
         with gr.Row(equal_height=True, min_height=768):
             with gr.Column(scale=2):
@@ -419,12 +436,12 @@ def main():
                         llm_fp16,
                         context_length
                     ],
-                    additional_outputs=[out]
+                    additional_outputs=[retrieved_context_box]
                 )
         with gr.Row():
             with gr.Column():
                 gr.Markdown('<center><h1>Retrieved context</h1></center>')
-                out.render()
+                retrieved_context_box.render()
     
     iface.launch(share=args.share)
 

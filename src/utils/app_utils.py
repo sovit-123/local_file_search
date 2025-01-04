@@ -39,7 +39,8 @@ def load_and_process_videos(file_path, images, placeholder, counter):
         counter += 1
         cap.set(cv2.CAP_PROP_POS_FRAMES, i)
         ret, frame = cap.read()
-        image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        images.append(Image.fromarray(image))
-        placeholder += f"<|image_{counter}|>\n"
+        if frame is not None:
+            image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            images.append(Image.fromarray(image))
+            placeholder += f"<|image_{counter}|>\n"
     return images, placeholder, counter
