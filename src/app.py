@@ -310,7 +310,7 @@ def generate_next_tokens(
             outputs.append(new_token)
             final_output = ''.join(outputs)
 
-            yield final_output
+            yield final_output, 'no'
 
     else:
         thread = threading.Thread(
@@ -325,72 +325,106 @@ def generate_next_tokens(
             outputs.append(new_token)
             final_output = ''.join(outputs)
 
-            yield final_output
+            yield final_output, 'no'
 
 
 def main():
-    iface = gr.ChatInterface(
-        fn=generate_next_tokens, 
-        multimodal=True,
+    with gr.Blocks(
         title='Image, Video, PDF, and Text Chat with Phi Models',
-        additional_inputs=[
-            gr.Dropdown(
-                choices=[
-                    'microsoft/Phi-3.5-mini-instruct',
-                    'microsoft/Phi-3-small-8k-instruct',
-                    'microsoft/Phi-3-medium-4k-instruct',
-                    'microsoft/Phi-3-small-128k-instruct',
-                    'microsoft/Phi-3-medium-128k-instruct',
-                    'microsoft/Phi-3.5-vision-instruct'
-                ],
-                label='Select Chat Model',
-                value='microsoft/Phi-3.5-mini-instruct'
-            ),
-            gr.Dropdown(
-                choices=[
-                    'all-MiniLM-L6-v2',
-                    'multi-qa-MiniLM-L6-cos-v1',
-                    'multi-qa-mpnet-base-dot-v1',
-                ],
-                label='Select Embedding Model',
-                value='all-MiniLM-L6-v2'
-            ),
-            gr.Slider(
-                minimum=64,
-                maximum=1024,
-                value=128,
-                step=1,
-                label='Chunk size when creating embeddings'
-            ),
-            gr.Slider(
-                minimum=0,
-                maximum=1024,
-                value=0,
-                step=1,
-                label='Text overlap when creating embeddings'
-            ),
-            gr.Slider(
-                minimum=1,
-                maximum=1000,
-                value=3,
-                step=1, 
-                label='Number of top chunks to retrieve'
-            ),
-            gr.Checkbox(
-                value=False, 
-                label='FP16 (Enabling does not load model in 4-bit)'
-            ),
-            gr.Slider(
-                minimum=1000,
-                maximum=128000,
-                value=3500,
-                step=1,
-                label='Context length.',
-                info='A context length of 3500 uses around 9.5GB of VRAM.'
-            )
-        ],
         theme=gr.themes.Soft(primary_hue='orange', secondary_hue='gray')
-    )
+    ) as iface:
+        # Additional inputs.
+        llm_dropdown = gr.Dropdown(
+            choices=[
+                'microsoft/Phi-3.5-mini-instruct',
+                'microsoft/Phi-3-small-8k-instruct',
+                'microsoft/Phi-3-medium-4k-instruct',
+                'microsoft/Phi-3-small-128k-instruct',
+                'microsoft/Phi-3-medium-128k-instruct',
+                'microsoft/Phi-3.5-vision-instruct'
+            ],
+            label='Select Chat Model',
+            value='microsoft/Phi-3.5-mini-instruct',
+            render=False
+        )
+
+        embed_dropdown = gr.Dropdown(
+            choices=[
+                'all-MiniLM-L6-v2',
+                'multi-qa-MiniLM-L6-cos-v1',
+                'multi-qa-mpnet-base-dot-v1',
+            ],
+            label='Select Embedding Model',
+            value='all-MiniLM-L6-v2',
+            render=False
+        )
+
+        chunk_size = gr.Slider(
+            minimum=64,
+            maximum=1024,
+            value=128,
+            step=1,
+            label='Chunk size when creating embeddings',
+            render=False
+        )
+
+        chunk_overlap = gr.Slider(
+            minimum=0,
+            maximum=1024,
+            value=0,
+            step=1,
+            label='Text overlap when creating embeddings',
+            render=False
+        )
+
+        topk = gr.Slider(
+            minimum=1,
+            maximum=1000,
+            value=3,
+            step=1, 
+            label='Number of top chunks to retrieve',
+            render=False
+        )
+
+        llm_fp16 = gr.Checkbox(
+            value=False, 
+            label='FP16 (Enabling does not load model in 4-bit)',
+            render=False
+        )
+
+        context_length = gr.Slider(
+            minimum=1000,
+            maximum=128000,
+            value=3500,
+            step=1,
+            label='Context length.',
+            info='A context length of 3500 uses around 9.5GB of VRAM.',
+            render=False
+        )
+
+        out = gr.Text(render=False)
+
+        with gr.Row(equal_height=True, min_height=768):
+            with gr.Column(scale=2):
+                gr.ChatInterface(
+                    fn=generate_next_tokens, 
+                    title='Image, Video, PDF, and Text Chat with Phi Models',
+                    multimodal=True,
+                    additional_inputs=[
+                        llm_dropdown,
+                        embed_dropdown,
+                        chunk_size,
+                        chunk_overlap,
+                        topk,
+                        llm_fp16,
+                        context_length
+                    ],
+                    additional_outputs=[out]
+                )
+        with gr.Row():
+            with gr.Column():
+                gr.Markdown('<center><h1>Retrieved context</h1></center>')
+                out.render()
     
     iface.launch(share=args.share)
 
