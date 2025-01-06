@@ -440,7 +440,7 @@ def main():
                 )
         with gr.Row():
             with gr.Column():
-                gr.Markdown('<center><h1>Retrieved context</h1></center>')
+                gr.Markdown('<center><h1>Retrieved Context</h1></center>')
                 retrieved_context_box.render()
     
     iface.launch(share=args.share)
