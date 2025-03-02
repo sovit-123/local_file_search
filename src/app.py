@@ -18,6 +18,7 @@ from create_embeddings import load_and_preprocess_text_files
 from utils.app_utils import (
     load_and_preprocess_images, load_and_process_videos
 )
+from utils.general import download_arxiv_doc
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -108,7 +109,8 @@ def generate_next_tokens(
     overlap, 
     num_chunks_to_retrieve,
     fp16,
-    CONTEXT_LENGTH
+    CONTEXT_LENGTH,
+    arxiv_link,
 ):
     """
     :param user_input: current user input
@@ -135,10 +137,30 @@ def generate_next_tokens(
     images = []
     placeholder = ''
 
+    # Arxiv link takes precedence over other documents.
+    if len(arxiv_link) != 0:
+        arxiv_path = download_arxiv_doc(arxiv_link)
+        results = load_and_preprocess_text_files(
+            results,
+            arxiv_path,
+            add_file_content=True,
+            chunk_size=int(chunk_size),
+            overlap=int(overlap),
+            model=embedding_model
+        )
+
+        embedded_docs = [result for result in results]
+        # Save documents with embeddings to a JSON file.
+        with open(os.path.join('..', 'data', 'temp.json'), 'w') as f:
+            json.dump(embedded_docs, f)
+        
+        documents = load_documents(os.path.join('..', 'data', 'temp.json'))
+
     # If a JSON file path is passed in the arguments.
     if args.json is not None:
         print('Loading JSON')
         documents = load_documents(os.path.join(args.json))
+
     # Else load whatever file is uploaded.
     else:
         if len(user_input['files']) != 0:
@@ -416,6 +438,12 @@ def main():
         )
 
         # Text box to display retrieved context.
+        arxiv_link_box = gr.Text(
+            label='Paste Arxiv Link (takes precedence)',
+            render=False
+        )
+
+        # Text box to display retrieved context.
         retrieved_context_box = gr.Text(
             label='Top chunks retrieved',
             render=False
@@ -426,6 +454,7 @@ def main():
                 gr.ChatInterface(
                     fn=generate_next_tokens, 
                     title='Image, Video, PDF, and Text Chat with Phi Models',
+                    description='Upload a PDF, JSON file, or paste an Arxiv link',
                     multimodal=True,
                     additional_inputs=[
                         llm_dropdown,
@@ -434,10 +463,12 @@ def main():
                         chunk_overlap,
                         topk,
                         llm_fp16,
-                        context_length
+                        context_length,
+                        arxiv_link_box
                     ],
                     additional_outputs=[retrieved_context_box]
                 )
+
         with gr.Row():
             with gr.Column():
                 gr.Markdown('<center><h1>Retrieved Context</h1></center>')
