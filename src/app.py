@@ -249,8 +249,8 @@ def generate_next_tokens(
         # final_input += user_text + '\n' + 'Answer the above question based on the following context. If the context is empty, then just chat normally:\nCONTEXT:\n' + context
         final_input += (f"{user_text}" 
                         f"\nAnswer the above question based on the following context."
-                        f" If the context does not contain the information,"
-                        f" then answer 'The retrieved content does not contain any reference'."
+                        # f" If the context does not contain the information,"
+                        # f" then answer 'The retrieved content does not contain any reference'."
                         f" If the context is empty, then just chat normally."
                         f"\nCONTEXT:\n{context}"
                     )
@@ -269,12 +269,12 @@ def generate_next_tokens(
     # previous turn, only the file path remains in the history and not the 
     # content. Good for saving memory (context) but bad for detailed querying.
     if len(history) == 0 and len(images) != 0:
-        prompt = '<s>' + template
+        prompt = '' + template
     else:
-        prompt = '<s>'
+        prompt = ''
         for history_list in history:
-            prompt += f"<|user|>\n{history_list[0]}<|end|>\n<|assistant|>\n{history_list[1]}<|end|>\n"
-        prompt += f"<|user|>\n{final_input}<|end|>\n<|assistant|>\n"
+            prompt += f"<|user|>{history_list[0]}<|end|><|assistant|>{history_list[1]}<|end|>"
+        prompt += f"<|user|>{final_input}<|end|><|assistant|>"
 
     print('Prompt: ', prompt)
     print('*' * 50)
@@ -344,15 +344,10 @@ def main():
         # Additional inputs.
         llm_dropdown = gr.Dropdown(
             choices=[
-                'microsoft/Phi-3.5-mini-instruct',
-                'microsoft/Phi-3-small-8k-instruct',
-                'microsoft/Phi-3-medium-4k-instruct',
-                'microsoft/Phi-3-small-128k-instruct',
-                'microsoft/Phi-3-medium-128k-instruct',
-                'microsoft/Phi-3.5-vision-instruct'
+                'microsoft/Phi-4-mini-instruct'
             ],
             label='Chat Model',
-            value='microsoft/Phi-3.5-mini-instruct',
+            value='microsoft/Phi-4-mini-instruct',
             render=False
         )
 
