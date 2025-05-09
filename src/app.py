@@ -271,8 +271,8 @@ def generate_next_tokens(
         # final_input += user_text + '\n' + 'Answer the above question based on the following context. If the context is empty, then just chat normally:\nCONTEXT:\n' + context
         final_input += (f"{user_text}" 
                         f"\nAnswer the above question based on the following context."
-                        f" If the context does not contain the information,"
-                        f" then answer 'The retrieved content does not contain any reference'."
+                        f" If the context does not contain the information,"                     # Commenting this line and the below line will lead the model to chat normally without any context also, which might be desirable in some cases.
+                        f" then answer 'The retrieved content does not contain any reference'."  # THIS LINE ALSO
                         f" If the context is empty, then just chat normally."
                         f"\nCONTEXT:\n{context}"
                     )
