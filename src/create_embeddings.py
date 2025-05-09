@@ -223,7 +223,8 @@ if __name__ == '__main__':
         # Parallel execution.
         results = Parallel(
             n_jobs=args.njobs, 
-            backend='multiprocessing'
+            backend='threading'
+            # backend='multiprocessing'
         )(delayed(load_and_preprocess_text_files)(
             documents=[], # Start with an empty list.  
             filename=filename, 
