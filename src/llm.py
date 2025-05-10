@@ -70,7 +70,8 @@ if __name__ == '__main__':
     from transformers import (
         AutoModelForCausalLM, 
         AutoTokenizer, 
-        BitsAndBytesConfig
+        BitsAndBytesConfig,
+        TextStreamer
     )
 
     import torch
@@ -81,14 +82,20 @@ if __name__ == '__main__':
         load_in_4bit=True
     )
 
+    model_id = 'microsoft/Phi-3.5-mini-instruct'
+
     tokenizer = AutoTokenizer.from_pretrained(
-        'microsoft/Phi-3-mini-4k-instruct', trust_remote_code=True
+        model_id, 
+        trust_remote_code=True
     )
     model = AutoModelForCausalLM.from_pretrained(
-        'microsoft/Phi-3-mini-4k-instruct',
+        model_id,
         quantization_config=quant_config,
         device_map=device,
         trust_remote_code=True
+    )
+    streamer = TextStreamer(
+        tokenizer=tokenizer, skip_prompt=True, skip_special_tokens=True
     )
     generate_next_tokens(
         'Who are you and what can you do?', 
@@ -96,5 +103,6 @@ if __name__ == '__main__':
         # context='You are a chess player.', 
         model=model,
         tokenizer=tokenizer,
-        device=device
+        device=device,
+        streamer=streamer
     )
