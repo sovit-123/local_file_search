@@ -82,11 +82,14 @@ if __name__ == '__main__':
         load_in_4bit=True
     )
 
+    model_id = 'microsoft/Phi-3.5-mini-instruct'
+
     tokenizer = AutoTokenizer.from_pretrained(
-        'microsoft/Phi-3.5-mini-instruct', trust_remote_code=True
+        model_id, 
+        trust_remote_code=True
     )
     model = AutoModelForCausalLM.from_pretrained(
-        'microsoft/Phi-3.5-mini-instruct',
+        model_id,
         quantization_config=quant_config,
         device_map=device,
         trust_remote_code=True
