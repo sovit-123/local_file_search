@@ -182,7 +182,7 @@ def generate_next_tokens(
                         file_path
                     )
                     images.append(image)
-                    placeholder += f"<|image_{counter}|>"
+                    placeholder += f"<|image_{counter}|>" if 'Phi-4' in chat_model_id else f"<|image_{counter}|>\n" # Else is for Phi-3 and Phi3.5. May need refactoring in future.
                 elif file_path.endswith('.pdf') or \
                     file_path.endswith('.txt'):
                     results = load_and_preprocess_text_files(
@@ -203,7 +203,8 @@ def generate_next_tokens(
                 elif file_path.endswith('.json'): # Load an indexed file directly.
                     documents = load_documents(file_path)
         
-    if chat_model_id == 'microsoft/Phi-3.5-vision-instruct' and len(images) == 0:
+    if (chat_model_id == 'microsoft/Phi-3.5-vision-instruct'\
+    or chat_model_id == 'microsoft/Phi-4-multimodal-instruct') and len(images) == 0:
         counter = 0
         for i, file_path in enumerate(GLOBAL_IMAGE_LIST):
             if file_path.endswith('.mp4'):
@@ -216,9 +217,10 @@ def generate_next_tokens(
                     file_path
                 )
                 images.append(image)
-                placeholder += f"<|image_{counter}|>"
+                placeholder += f"<|image_{counter}|>" if 'Phi-4' in chat_model_id else f"<|image_{counter}|>\n" # Else is for Phi-3 and Phi3.5. May need refactoring in future.
 
-    if chat_model_id == 'microsoft/Phi-3.5-vision-instruct' and len(images) == 0:
+    if (chat_model_id == 'microsoft/Phi-3.5-vision-instruct'\
+    or chat_model_id == 'microsoft/Phi-4-multimodal-instruct') and len(images) == 0:
         gr.Warning(
             'Please upload an image to use the Vision model. '
             'Or select one of the text models from the advanced '
@@ -296,9 +298,15 @@ def generate_next_tokens(
         prompt = '<s>' + template
     else:
         prompt = '<s>'
-        for history_list in history:
-            prompt += f"<|user|>{history_list[0]}<|end|><|assistant|>{history_list[1]}<|end|>"
-        prompt += f"<|user|>{final_input}<|end|><|assistant|>"
+        # Expecting model to be either Phi-4 or Phi-3/Phi-3.5.
+        if 'Phi-4' in chat_model_id:
+            for history_list in history:
+                prompt += f"<|user|>{history_list[0]}<|end|><|assistant|>{history_list[1]}<|end|>"
+            prompt += f"<|user|>{final_input}<|end|><|assistant|>"
+        else: # If model is Phi-3 or Phi-3.5. May need refactoring in future.
+            for history_list in history:
+                prompt += f"<|user|>\n{history_list[0]}<|end|>\n<|assistant|>\n{history_list[1]}<|end|>\n"
+            prompt += f"<|user|>\n{final_input}<|end|>\n<|assistant|>\n"
 
     print('Prompt: ', prompt)
     print('*' * 50)
@@ -368,15 +376,15 @@ def main():
         # Additional inputs.
         llm_dropdown = gr.Dropdown(
             choices=[
-                'microsoft/Phi-3.5-mini-instruct',
                 'microsoft/Phi-4-mini-instruct',
+                'microsoft/Phi-3.5-mini-instruct',
                 'microsoft/Phi-3-small-128k-instruct',
                 'microsoft/Phi-3-medium-128k-instruct',
                 'microsoft/Phi-3.5-vision-instruct',
                 'microsoft/Phi-4-multimodal-instruct'
             ],
             label='Chat Model',
-            value='microsoft/Phi-3.5-mini-instruct',
+            value='microsoft/Phi-4-mini-instruct',
             render=False
         )
 
