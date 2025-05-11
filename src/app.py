@@ -3,6 +3,7 @@ import json
 import os
 import threading
 import argparse
+import torch
 
 from transformers import (
     AutoModelForCausalLM, 
@@ -74,7 +75,8 @@ def load_llm(chat_model_id, fp16):
         quantization_config=quant_config if not fp16 else None,
         device_map=device,
         trust_remote_code=True,
-        _attn_implementation='eager'
+        _attn_implementation='flash_attention_2', # 'eager' for older GPUs like T4, P100
+        torch_dtype='auto'
     )
 
     streamer = TextIteratorStreamer(
