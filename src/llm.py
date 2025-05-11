@@ -34,7 +34,7 @@ def generate_next_tokens(
 
     # print(template)
 
-    prompt =  '<s>' + history + user_input + '<|end|>\n<|assistant|>\n' if len(history) > 1 else '<s>' + template
+    prompt =  '<s>' + history + user_input + '<|end|><|assistant|>' if len(history) > 1 else '<s>' + template
 
     # print('Prompt: ', prompt)
     print('*' * 50)
@@ -60,9 +60,9 @@ def generate_next_tokens(
     answer = tokenizer.batch_decode(outputs[:, inputs['input_ids'].shape[1]:], skip_special_tokens=True)[0]
 
     if len(history) > 1:
-        history += f"{user_input}<|end|>\n<|assistant|>\n{answer}<|end|>\n<|user|>\n"
+        history += f"{user_input}<|end|><|assistant|>{answer}<|end|><|user|>"
     else:
-        history = f"{template}{answer}<|end|>\n<|user|>\n"
+        history = f"{template}{answer}<|end|><|user|>"
 
     # print(f"\n{YELLOW}{answer}{RESET}")
 
@@ -84,7 +84,8 @@ if __name__ == '__main__':
         bnb_4bit_use_double_quant=True
     )
 
-    model_id = 'microsoft/Phi-3.5-mini-instruct'
+    # model_id = 'microsoft/Phi-3.5-mini-instruct'
+    model_id = 'microsoft/Phi-4-mini-instruct'
 
     tokenizer = AutoTokenizer.from_pretrained(
         model_id, 
