@@ -367,8 +367,6 @@ def main():
         llm_dropdown = gr.Dropdown(
             choices=[
                 'microsoft/Phi-3.5-mini-instruct',
-                'microsoft/Phi-3-small-8k-instruct',
-                'microsoft/Phi-3-medium-4k-instruct',
                 'microsoft/Phi-3-small-128k-instruct',
                 'microsoft/Phi-3-medium-128k-instruct',
                 'microsoft/Phi-3.5-vision-instruct'
