@@ -2,9 +2,9 @@ torch==2.5.1
 torchvision==0.20.1
 torchaudio==2.5.1
 bitsandbytes==0.45.0
-transformers==4.47.0
+transformers==4.51.3
 accelerate==1.2.0
-huggingface-hub==0.26.5
+huggingface-hub==0.31.1
 joblib==1.4.2
 sentence-transformers==3.4.0
 tqdm==4.66.4

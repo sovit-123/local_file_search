@@ -67,7 +67,8 @@ def load_llm(chat_model_id, fp16):
         num_crops=4
     ) 
     tokenizer = AutoTokenizer.from_pretrained(
-        chat_model_id, trust_remote_code=True
+        chat_model_id, 
+        trust_remote_code=True,
     )
     
     model = AutoModelForCausalLM.from_pretrained(
@@ -203,7 +204,7 @@ def generate_next_tokens(
                 elif file_path.endswith('.json'): # Load an indexed file directly.
                     documents = load_documents(file_path)
         
-    if (chat_model_id == 'microsoft/Phi-3.5-vision-instruct'\
+    if (chat_model_id == 'sovitrath/Phi-3.5-vision-instruct'\
     or chat_model_id == 'microsoft/Phi-4-multimodal-instruct') and len(images) == 0:
         counter = 0
         for i, file_path in enumerate(GLOBAL_IMAGE_LIST):
@@ -219,7 +220,7 @@ def generate_next_tokens(
                 images.append(image)
                 placeholder += f"<|image_{counter}|>" if 'Phi-4' in chat_model_id else f"<|image_{counter}|>\n" # Else is for Phi-3 and Phi3.5. May need refactoring in future.
 
-    if (chat_model_id == 'microsoft/Phi-3.5-vision-instruct'\
+    if (chat_model_id == 'sovitrath/Phi-3.5-vision-instruct'\
     or chat_model_id == 'microsoft/Phi-4-multimodal-instruct') and len(images) == 0:
         gr.Warning(
             'Please upload an image to use the Vision model. '
@@ -377,10 +378,8 @@ def main():
         llm_dropdown = gr.Dropdown(
             choices=[
                 'microsoft/Phi-4-mini-instruct',
-                'microsoft/Phi-3.5-mini-instruct',
-                'microsoft/Phi-3-small-128k-instruct',
-                'microsoft/Phi-3-medium-128k-instruct',
-                'microsoft/Phi-3.5-vision-instruct',
+                'sovitrath/Phi-3.5-mini-instruct',
+                'sovitrath/Phi-3.5-vision-instruct',
                 'microsoft/Phi-4-multimodal-instruct'
             ],
             label='Chat Model',
