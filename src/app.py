@@ -53,6 +53,11 @@ def load_llm(chat_model_id, fp16):
     global streamer
     global processor
 
+    # Forcing floating point 16 precision for Phi-4 Multimodal as it does not
+    # spport bnb qunat yet.
+    if chat_model_id == 'microsoft/Phi-4-multimodal-instruct':
+        fp16 = True
+
     gr.Info(f"Loading Chat model: {chat_model_id}")
 
     quant_config = BitsAndBytesConfig(
