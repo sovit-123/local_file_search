@@ -3,6 +3,7 @@ import json
 import os
 import threading
 import argparse
+import torch
 
 from transformers import (
     AutoModelForCausalLM, 
@@ -52,6 +53,11 @@ def load_llm(chat_model_id, fp16):
     global streamer
     global processor
 
+    # Forcing floating point 16 precision for Phi-4 Multimodal as it does not
+    # spport bnb qunat yet.
+    if chat_model_id == 'microsoft/Phi-4-multimodal-instruct':
+        fp16 = True
+
     gr.Info(f"Loading Chat model: {chat_model_id}")
 
     quant_config = BitsAndBytesConfig(
@@ -66,7 +72,8 @@ def load_llm(chat_model_id, fp16):
         num_crops=4
     ) 
     tokenizer = AutoTokenizer.from_pretrained(
-        chat_model_id, trust_remote_code=True
+        chat_model_id, 
+        trust_remote_code=True,
     )
     
     model = AutoModelForCausalLM.from_pretrained(
@@ -74,7 +81,8 @@ def load_llm(chat_model_id, fp16):
         quantization_config=quant_config if not fp16 else None,
         device_map=device,
         trust_remote_code=True,
-        _attn_implementation='eager'
+        _attn_implementation='flash_attention_2', # 'eager' for older GPUs like T4, P100
+        torch_dtype='auto'
     )
 
     streamer = TextIteratorStreamer(
@@ -180,7 +188,7 @@ def generate_next_tokens(
                         file_path
                     )
                     images.append(image)
-                    placeholder += f"<|image_{counter}|>\n"
+                    placeholder += f"<|image_{counter}|>" if 'Phi-4' in chat_model_id else f"<|image_{counter}|>\n" # Else is for Phi-3 and Phi3.5. May need refactoring in future.
                 elif file_path.endswith('.pdf') or \
                     file_path.endswith('.txt'):
                     results = load_and_preprocess_text_files(
@@ -201,7 +209,8 @@ def generate_next_tokens(
                 elif file_path.endswith('.json'): # Load an indexed file directly.
                     documents = load_documents(file_path)
         
-    if chat_model_id == 'microsoft/Phi-3.5-vision-instruct' and len(images) == 0:
+    if (chat_model_id == 'sovitrath/Phi-3.5-vision-instruct'\
+    or chat_model_id == 'microsoft/Phi-4-multimodal-instruct') and len(images) == 0:
         counter = 0
         for i, file_path in enumerate(GLOBAL_IMAGE_LIST):
             if file_path.endswith('.mp4'):
@@ -214,16 +223,20 @@ def generate_next_tokens(
                     file_path
                 )
                 images.append(image)
-                placeholder += f"<|image_{counter}|>\n"
+                placeholder += f"<|image_{counter}|>" if 'Phi-4' in chat_model_id else f"<|image_{counter}|>\n" # Else is for Phi-3 and Phi3.5. May need refactoring in future.
 
-    if chat_model_id == 'microsoft/Phi-3.5-vision-instruct' and len(images) == 0:
+    if (chat_model_id == 'sovitrath/Phi-3.5-vision-instruct'\
+    or chat_model_id == 'microsoft/Phi-4-multimodal-instruct') and len(images) == 0:
         gr.Warning(
             'Please upload an image to use the Vision model. '
             'Or select one of the text models from the advanced '
             'dropdown to chat with PDFs and other text files.',
             duration=20
         )
-    if chat_model_id != 'microsoft/Phi-3.5-vision-instruct' and len(images) != 0:
+    if chat_model_id not in [
+        'sovitrath/Phi-3.5-vision-instruct', 
+        'microsoft/Phi-4-multimodal-instruct'
+    ] and len(images) != 0:
         gr.Warning(
             'You are using a text model. '
             'Please select a Vision model from the advanced '
@@ -271,10 +284,10 @@ def generate_next_tokens(
         # final_input += user_text + '\n' + 'Answer the above question based on the following context. If the context is empty, then just chat normally:\nCONTEXT:\n' + context
         final_input += (f"{user_text}" 
                         f"\nAnswer the above question based on the following context."
-                        f" If the context does not contain the information,"                     # Commenting this line and the below line will lead the model to chat normally without any context also, which might be desirable in some cases.
-                        f" then answer 'The retrieved content does not contain any reference'."  # THIS LINE ALSO
+                        # f" If the context does not contain the information,"                     # Commenting this line and the below line will lead the model to chat normally without any context also, which might be desirable in some cases.
+                        # f" then answer 'The retrieved content does not contain any reference'."  # THIS LINE ALSO
                         f" If the context is empty, then just chat normally."
-                        f"\nCONTEXT:\n{context}"
+                        f"\nCONTEXT: {context}"
                     )
         chat = [
             {'role': 'user', 'content': 'Hi'},
@@ -294,9 +307,15 @@ def generate_next_tokens(
         prompt = '<s>' + template
     else:
         prompt = '<s>'
-        for history_list in history:
-            prompt += f"<|user|>\n{history_list[0]}<|end|>\n<|assistant|>\n{history_list[1]}<|end|>\n"
-        prompt += f"<|user|>\n{final_input}<|end|>\n<|assistant|>\n"
+        # Expecting model to be either Phi-4 or Phi-3/Phi-3.5.
+        if 'Phi-4' in chat_model_id:
+            for history_list in history:
+                prompt += f"<|user|>{history_list[0]}<|end|><|assistant|>{history_list[1]}<|end|>"
+            prompt += f"<|user|>{final_input}<|end|><|assistant|>"
+        else: # If model is Phi-3 or Phi-3.5. May need refactoring in future.
+            for history_list in history:
+                prompt += f"<|user|>\n{history_list[0]}<|end|>\n<|assistant|>\n{history_list[1]}<|end|>\n"
+            prompt += f"<|user|>\n{final_input}<|end|>\n<|assistant|>\n"
 
     print('Prompt: ', prompt)
     print('*' * 50)
@@ -366,13 +385,13 @@ def main():
         # Additional inputs.
         llm_dropdown = gr.Dropdown(
             choices=[
-                'microsoft/Phi-3.5-mini-instruct',
-                'microsoft/Phi-3-small-128k-instruct',
-                'microsoft/Phi-3-medium-128k-instruct',
-                'microsoft/Phi-3.5-vision-instruct'
+                'microsoft/Phi-4-mini-instruct',
+                'microsoft/Phi-4-multimodal-instruct',
+                'sovitrath/Phi-3.5-mini-instruct',
+                'sovitrath/Phi-3.5-vision-instruct'
             ],
             label='Chat Model',
-            value='microsoft/Phi-3.5-mini-instruct',
+            value='microsoft/Phi-4-mini-instruct',
             render=False
         )
 
