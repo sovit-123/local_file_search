@@ -228,7 +228,10 @@ def generate_next_tokens(
             'dropdown to chat with PDFs and other text files.',
             duration=20
         )
-    if chat_model_id != 'microsoft/Phi-3.5-vision-instruct' and len(images) != 0:
+    if chat_model_id not in [
+        'sovitrath/Phi-3.5-vision-instruct', 
+        'microsoft/Phi-4-multimodal-instruct'
+    ] and len(images) != 0:
         gr.Warning(
             'You are using a text model. '
             'Please select a Vision model from the advanced '
@@ -378,9 +381,9 @@ def main():
         llm_dropdown = gr.Dropdown(
             choices=[
                 'microsoft/Phi-4-mini-instruct',
+                'microsoft/Phi-4-multimodal-instruct',
                 'sovitrath/Phi-3.5-mini-instruct',
-                'sovitrath/Phi-3.5-vision-instruct',
-                'microsoft/Phi-4-multimodal-instruct'
+                'sovitrath/Phi-3.5-vision-instruct'
             ],
             label='Chat Model',
             value='microsoft/Phi-4-mini-instruct',
