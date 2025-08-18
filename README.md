@@ -37,7 +37,7 @@ Next install rest of the requirements.
 pip install -r requirements.txt
 ```
 
-## Updates and Ste[s]
+## Updates and Steps
 
 * August 18, 2025: Web search using [Tavily](https://www.tavily.com/) is now possible. Just create a `.env` after cloning the repository and add `TAVILY_API_KEY=YOUR_API_KEY`.
 
