@@ -37,7 +37,9 @@ Next install rest of the requirements.
 pip install -r requirements.txt
 ```
 
-## Updates
+## Updates and Ste[s]
+
+* August 18, 2025: Web search using [Tavily](https://www.tavily.com/) is now possible. Just create a `.env` after cloning the repository and add `TAVILY_API_KEY=YOUR_API_KEY`.
 
 * September 4, 2024: Added image, PDF, and text file chat to `app.py` with multiple Phi model options.
 
@@ -45,7 +47,9 @@ pip install -r requirements.txt
 
 ## Steps to Chat with Any PDF in Graio UI
 
-<span style="color: green">***You can run `app.py` and select the any PDF file in the Gradio UI to interactively chat with the document.***</span> <span style="color: purple">***(Just execute `python app.py` and start chatting)***</span>
+* <span style="color: green">***You can run `app.py` and select the any PDF file in the Gradio UI to interactively chat with the document.***</span> <span style="color: purple">***(Just execute `python app.py` and start chatting)***</span>
+
+* **To use web search**: Powered by [Tavily](https://www.tavily.com/) search. Just create a `.env` after cloning the repository and add `TAVILY_API_KEY=YOUR_API_KEY`.
 
 ## Steps to Run Through CLI
 
