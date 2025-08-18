@@ -11,7 +11,7 @@ RESET = "\033[0m"
 history = ''
 
 def generate_next_tokens(
-    user_input, context, model, tokenizer, streamer, device
+    user_input, context, model, tokenizer, streamer, device, model_id
 ):
     global history
 

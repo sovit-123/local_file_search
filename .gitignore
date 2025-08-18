@@ -2,5 +2,6 @@ data/*
 !data/readme.txt
 tools/outputs
 tools/wandb
+.env
 
 __pycache__

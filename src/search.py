@@ -8,6 +8,7 @@ $ python search.py --index-file path/to/index.json
 import json
 import argparse
 import torch
+import os
 
 from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
@@ -18,6 +19,12 @@ from transformers import (
     BitsAndBytesConfig
 )
 from utils.general import MyTextStreamer
+from dotenv import load_dotenv
+from tavily import TavilyClient
+
+load_dotenv()
+
+TAVILY_API_KEY = os.getenv('TAVILY_API_KEY')
 
 def parser_opt():
     parser = argparse.ArgumentParser()
@@ -50,6 +57,12 @@ def parser_opt():
         default=5,
         type=int,
         help='number of chunks to retrieve'
+    )
+    parser.add_argument(
+        '--web-search',
+        dest='web_search',
+        action='store_true',
+        help='do a web search to get context, uses Tavily API key'
     )
     args = parser.parse_args()
     return args
@@ -109,11 +122,36 @@ def load_documents(file_path):
         documents = json.load(f)
     return documents
 
-def main(documents, query, model, extract_content, topk=5):
+
+def do_web_search(query=None):
+    """
+    Do a web search using Tavily to get the context and return to the model.
+
+    :param query: Search query.
+
+    Returns:
+        retrieved_docs: a list of retrieved web docs/a list of string results.
+            e.g. ['context 1', 'context 2']
+    """
+    assert TAVILY_API_KEY is not None, 'TAVILY_API_KEY not found, please check your .env file'
+
+    tavily_client = TavilyClient(api_key=TAVILY_API_KEY)
+    response = tavily_client.search(query)
+
+    results = [res['content'] for res in response['results']]
+    return results
+
+
+def main(documents, query, model, extract_content, topk=5, web_search=False):
     RED = "\033[31m"
     RESET = "\033[0m"
     # Perform search.
-    results = search(query, documents, model, topk)
+    if web_search:
+        results = do_web_search(query=query)
+        return results
+    else:
+        results = search(query, documents, model, topk)
+    
     relevant_parts = []
     retrieved_docs = []
     for result in results:
@@ -142,6 +180,7 @@ def main(documents, query, model, extract_content, topk=5):
 
 if __name__ == '__main__':
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    model_id = 'microsoft/Phi-4-mini-instruct'
 
     RED = "\033[31m"
     GREEN = "\033[32m"
@@ -154,9 +193,12 @@ if __name__ == '__main__':
     # Load embedding model.
     embedding_model = load_embedding_model(args.model)
     
-    # Load documents.
+    # Load documents if user does not demand web search.
     documents_file_path = args.index_file
-    documents = load_documents(documents_file_path)
+    if not args.web_search:
+        documents = load_documents(documents_file_path)
+    else:
+        documents = None
 
     # Load the LLM only when if `args.llm` has been passed by user.
     if args.llm_call:
@@ -165,10 +207,10 @@ if __name__ == '__main__':
         )
 
         tokenizer = AutoTokenizer.from_pretrained(
-            'microsoft/Phi-3.5-mini-instruct', trust_remote_code=True
+            model_id, trust_remote_code=True
         )
         llm_model = AutoModelForCausalLM.from_pretrained(
-            'microsoft/Phi-3.5-mini-instruct',
+            model_id,
             quantization_config=quant_config,
             device_map=device,
             trust_remote_code=True
@@ -180,7 +222,14 @@ if __name__ == '__main__':
     # Keep on asking the user prompt until the user exits.
     while True:
         query = input(f"\n{RED}Enter your search query:{RESET} ")
-        context_list = main(documents, query, embedding_model, extract_content, topk)
+        context_list = main(
+            documents, 
+            query, 
+            embedding_model, 
+            extract_content, 
+            topk, 
+            web_search=args.web_search
+        )
     
         if args.llm_call:
             print(f"\n{GREEN}Generating LLM response...\n{RESET}")
@@ -192,5 +241,6 @@ if __name__ == '__main__':
                 model=llm_model,
                 tokenizer=tokenizer,
                 streamer=streamer,
-                device=device 
+                device=device,
+                model_id=model_id
             )
