@@ -22,3 +22,5 @@ pydantic-core==2.27.1
 requests==2.32.3
 peft==0.15.2
 backoff==2.2.1
+tavily-python==0.7.10
+python-dotenv==1.1.1

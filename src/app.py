@@ -119,6 +119,7 @@ def generate_next_tokens(
     fp16,
     CONTEXT_LENGTH,
     arxiv_link,
+    web_search_check
 ):
     """
     :param user_input: current user input
@@ -272,6 +273,14 @@ def generate_next_tokens(
         # Get the context.
         if documents == None: # Bypass if no document is uploaded.
             context_list = []
+        if documents == None and web_search_check:
+            context_list = search_main(
+                documents=None,
+                query=user_text,
+                model=embedding_model,
+                extract_content=True,
+                web_search=web_search_check
+            )
         else:
             context_list = search_main(
                 documents, 
@@ -454,6 +463,13 @@ def main():
             render=False
         )
 
+        web_search_check = gr.Checkbox(
+            value=False,
+            label='Tavily web search',
+            info='Ensure .env has TAVILY_API_KEY',
+            render=False
+        )
+
         # Text box to display retrieved context.
         arxiv_link_box = gr.Text(
             label='Paste Arxiv Link (takes precedence)',
@@ -481,7 +497,8 @@ def main():
                         topk,
                         llm_fp16,
                         context_length,
-                        arxiv_link_box
+                        arxiv_link_box,
+                        web_search_check
                     ],
                     additional_outputs=[retrieved_context_box]
                 )
