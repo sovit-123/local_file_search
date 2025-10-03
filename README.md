@@ -7,7 +7,8 @@ From scratch implementation, ***no Vector DBs yet.***
 ***A simplified use case***: You have thousands of research papers but don't know which are the ones containing content that you want. You do a search according to a rough query and get an adequately good results. 
 
 
-https://github.com/user-attachments/assets/0b1bfc91-868b-4aa7-80ba-9e0a730c4b4b
+https://github.com/user-attachments/assets/bfc8ac98-e60f-44e4-99da-54071aff196f
+
 
 ## Setup
 
