@@ -46,6 +46,8 @@ embedding_model = None
 tokenizer = None
 streamer = None
 processor = None
+web_search = False
+search_engine = None
 
 def load_llm(chat_model_id, fp16):
     global model
@@ -119,7 +121,8 @@ def generate_next_tokens(
     fp16,
     CONTEXT_LENGTH,
     arxiv_link,
-    web_search_check
+    web_search_tavily,
+    web_search_ppxl
 ):
     """
     :param user_input: current user input
@@ -270,18 +273,27 @@ def generate_next_tokens(
             add_generation_prompt=True
         )
     else:
+        context_list = []
         # Get the context.
         if documents == None: # Bypass if no document is uploaded.
             context_list = []
-        if documents == None and web_search_check:
+        if web_search_tavily or web_search_ppxl:
+            web_search = True
+            search_engine = 'tavily' if web_search_tavily else 'perplexity' if web_search_ppxl else None
+            print(f"Web search: {web_search}, search engine: {search_engine}")
+            # TODO
+            # Instead we can extend the `context_list` to allow for storage of both online and doc context.
             context_list = search_main(
                 documents=None,
                 query=user_text,
                 model=embedding_model,
                 extract_content=True,
-                web_search=web_search_check
+                web_search=web_search,
+                search_engine=search_engine
             )
-        else:
+        if documents is not None:
+            # TODO
+            # Instead we can extend the `context_list` to allow for storage of both online and doc context.
             context_list = search_main(
                 documents, 
                 user_text, 
@@ -463,11 +475,20 @@ def main():
             render=False
         )
 
-        web_search_check = gr.Checkbox(
+        web_search_tavily = gr.Checkbox(
             value=False,
             label='Tavily web search',
             info='Ensure .env has TAVILY_API_KEY',
-            render=False
+            render=False,
+            key='tavily'
+        )
+
+        web_search_ppxl = gr.Checkbox(
+            value=False,
+            label='Perplexity web search',
+            info='Ensure .env has PERPLEXITY_API_KEY',
+            render=False,
+            key='perplexity'
         )
 
         # Text box to display retrieved context.
@@ -481,6 +502,16 @@ def main():
             label='Top chunks retrieved',
             render=False
         )
+
+        # Check if web search is enabled.
+        # web_search = False
+        # search_engine = None
+        # if web_search_tavily or web_search_ppxl:
+        #     # Because all additional inputs have to be gradio components.
+        #     web_search = (web_search_tavily or web_search_ppxl)
+        #     search_engine = gr.Text((web_search_tavily or web_search_ppxl).key, render=False)
+
+        # print(f"Web search: {web_search}, search engine: {search_engine}")
 
         with gr.Row(equal_height=True, min_height=768):
             with gr.Column(scale=2):
@@ -498,7 +529,8 @@ def main():
                         llm_fp16,
                         context_length,
                         arxiv_link_box,
-                        web_search_check
+                        web_search_tavily,
+                        web_search_ppxl
                     ],
                     additional_outputs=[retrieved_context_box]
                 )

@@ -21,10 +21,9 @@ from transformers import (
 from utils.general import MyTextStreamer
 from dotenv import load_dotenv
 from tavily import TavilyClient
+from perplexity import Perplexity
 
 load_dotenv()
-
-TAVILY_API_KEY = os.getenv('TAVILY_API_KEY')
 
 def parser_opt():
     parser = argparse.ArgumentParser()
@@ -123,31 +122,55 @@ def load_documents(file_path):
     return documents
 
 
-def do_web_search(query=None):
+def do_web_search(query=None, search_engine='perplexity'):
     """
     Do a web search using Tavily to get the context and return to the model.
 
-    :param query: Search query.
+    :param query: search query
+    :param search_engine: search engine to use, either 'tavily' or 'perplexity'
 
     Returns:
         retrieved_docs: a list of retrieved web docs/a list of string results.
             e.g. ['context 1', 'context 2']
     """
-    assert TAVILY_API_KEY is not None, 'TAVILY_API_KEY not found, please check your .env file'
+    if search_engine == 'tavily':
+        TAVILY_API_KEY = os.getenv('TAVILY_API_KEY')
+        assert TAVILY_API_KEY is not None, 'TAVILY_API_KEY not found, please check your .env file'
+    
+        tavily_client = TavilyClient(api_key=TAVILY_API_KEY)
+        response = tavily_client.search(query)
+    
+        results = [res['content'] for res in response['results']]
+    elif search_engine == 'perplexity':
+        PERPLEXITY_API_KEY = os.getenv('PERPLEXITY_API_KEY')
+        assert PERPLEXITY_API_KEY is not None, 'PERPLEXITY_API_KEY not found, please check your .env file'
 
-    tavily_client = TavilyClient(api_key=TAVILY_API_KEY)
-    response = tavily_client.search(query)
+        ppxl_client = Perplexity()
+        response = ppxl_client.search.create(
+            query=query,
+            max_results=5,
+            max_tokens_per_page=512
+        )
 
-    results = [res['content'] for res in response['results']]
+        results = [result.snippet for result in response.results]
+
     return results
 
 
-def main(documents, query, model, extract_content, topk=5, web_search=False):
+def main(
+    documents, 
+    query, 
+    model, 
+    extract_content, 
+    topk=5, 
+    web_search=False, 
+    search_engine=None
+):
     RED = "\033[31m"
     RESET = "\033[0m"
     # Perform search.
     if web_search:
-        results = do_web_search(query=query)
+        results = do_web_search(query=query, search_engine=search_engine)
         return results
     else:
         results = search(query, documents, model, topk)
