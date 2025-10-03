@@ -273,6 +273,7 @@ def generate_next_tokens(
             add_generation_prompt=True
         )
     else:
+        context_list = []
         # Get the context.
         if documents == None: # Bypass if no document is uploaded.
             context_list = []
@@ -280,6 +281,8 @@ def generate_next_tokens(
             web_search = True
             search_engine = 'tavily' if web_search_tavily else 'perplexity' if web_search_ppxl else None
             print(f"Web search: {web_search}, search engine: {search_engine}")
+            # TODO
+            # Instead we can extend the `context_list` to allow for storage of both online and doc context.
             context_list = search_main(
                 documents=None,
                 query=user_text,
@@ -289,6 +292,8 @@ def generate_next_tokens(
                 search_engine=search_engine
             )
         if documents is not None:
+            # TODO
+            # Instead we can extend the `context_list` to allow for storage of both online and doc context.
             context_list = search_main(
                 documents, 
                 user_text, 
