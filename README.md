@@ -37,7 +37,9 @@ Next install rest of the requirements.
 pip install -r requirements.txt
 ```
 
-## Updates and Steps
+## Updates
+
+* October 03, 2025: Added [Perplexity Search API](https://docs.perplexity.ai/getting-started/overview) for web search grounded results. Add your `PERPLEXITY_API_KEY` to `.env` file and choose the **Perplexity Search from the additional inputs drop down**.
 
 * August 18, 2025: Web search using [Tavily](https://www.tavily.com/) is now possible. Just create a `.env` after cloning the repository and add `TAVILY_API_KEY=YOUR_API_KEY`.
 
@@ -45,11 +47,17 @@ pip install -r requirements.txt
 
 * September 1, 2024: Now you can upload PDFs directly to the Gradio UI (`python app.py`) and start chatting.
 
-## Steps to Chat with Any PDF in Graio UI
+## Steps to Chat with Any PDF in Gradio UI
 
-* <span style="color: green">***You can run `app.py` and select the any PDF file in the Gradio UI to interactively chat with the document.***</span> <span style="color: purple">***(Just execute `python app.py` and start chatting)***</span>
+* ```
+  cd src
+  python app.py
+  ```
 
-* **To use web search**: Powered by [Tavily](https://www.tavily.com/) search. Just create a `.env` after cloning the repository and add `TAVILY_API_KEY=YOUR_API_KEY`.
+  * <span style="color: green">***You can run `app.py` and select the any PDF file in the Gradio UI to interactively chat with the document.***</span> <span style="color: purple">***(Just execute `python app.py` and start chatting)***</span>
+
+
+* **To use web search**: Powered by [Tavily](https://www.tavily.com/) search. Just create a `.env` after cloning the repository and add `TAVILY_API_KEY=YOUR_API_KEY`. Or add your `PERPLEXITY_API_KEY` to `.env` file and choose the **Perplexity Search from the additional inputs drop down**.
 
 ## Steps to Run Through CLI
 
