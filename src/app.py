@@ -239,7 +239,8 @@ def generate_next_tokens(
         )
     if chat_model_id not in [
         'sovitrath/Phi-3.5-vision-instruct', 
-        'microsoft/Phi-4-multimodal-instruct'
+        'microsoft/Phi-4-multimodal-instruct',
+        'sovitrath/Phi-3.5-Vision-Instruct-OCR'
     ] and len(images) != 0:
         gr.Warning(
             'You are using a text model. '
@@ -409,7 +410,8 @@ def main():
                 'microsoft/Phi-4-mini-instruct',
                 'microsoft/Phi-4-multimodal-instruct',
                 'sovitrath/Phi-3.5-mini-instruct',
-                'sovitrath/Phi-3.5-vision-instruct'
+                'sovitrath/Phi-3.5-vision-instruct',
+                'sovitrath/Phi-3.5-Vision-Instruct-OCR'
             ],
             label='Chat Model',
             value='microsoft/Phi-4-mini-instruct',
