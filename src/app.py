@@ -13,7 +13,7 @@ from transformers import (
     AutoProcessor
 )
 from sentence_transformers import SentenceTransformer
-from search import load_documents
+from search import load_documents, DenseSearch
 from search import main as search_main
 from create_embeddings import load_and_preprocess_text_files
 from utils.app_utils import (
@@ -48,6 +48,7 @@ streamer = None
 processor = None
 web_search = False
 search_engine = None
+dense_searcher = None
 
 def load_llm(chat_model_id, fp16):
     global model
@@ -139,10 +140,14 @@ def generate_next_tokens(
     global results
     global model_id
     global embed_model_id
+    global dense_searcher
 
     if embedding_model_id != embed_model_id:
         load_embedding_model(embedding_model_id)
         embed_model_id = embedding_model_id
+
+    if dense_searcher is None:
+        dense_searcher = DenseSearch(embedding_model=embedding_model)
 
     # If a new PDF file is uploaded, create embeddings, store in `temp.json`
     # and load the embedding file.
@@ -290,7 +295,8 @@ def generate_next_tokens(
                 model=embedding_model,
                 extract_content=True,
                 web_search=web_search,
-                search_engine=search_engine
+                search_engine=search_engine,
+                dense_searcher=dense_searcher
             )
         if documents is not None:
             # TODO
@@ -300,7 +306,8 @@ def generate_next_tokens(
                 user_text, 
                 embedding_model,
                 extract_content=True,
-                topk=int(num_chunks_to_retrieve)
+                topk=int(num_chunks_to_retrieve),
+                dense_searcher=dense_searcher
             )
         context = '\n\n'.join(context_list)
         # final_input += user_text + '\n' + 'Answer the above question based on the following context. If the context is empty, then just chat normally:\nCONTEXT:\n' + context

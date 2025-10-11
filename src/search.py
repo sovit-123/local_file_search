@@ -71,48 +71,65 @@ def load_embedding_model(model_id=None):
     model = SentenceTransformer(model_id)
     return model
 
-def extract_features(text, model):
-    """Generate SBERT embeddings for the input text."""
-    return model.encode(text)
+class DenseSearch():
+    """
+    Class for implementing dense search along with extracting features
+    from text using embedding model, processing query, and returning
+    the dense search cosine scores.
+    """
+    def __init__(self, embedding_model):
+        self.embedding_model = embedding_model
 
-def process_query(query, model):
-    """Preprocess the query and generate SBERT embeddings."""
-    query_features = extract_features(query, model).tolist()
-    return query_features
+    def extract_features(self, text):
+        """Generate SBERT embeddings for the input text."""
 
-def search(query, documents, model, top_k=5):
-    """Search for the most relevant documents to the query."""
-    print('SEARCHING...')
-    query_features = process_query(query, model)
-    scores = []
-    for document in tqdm(documents, total=len(documents)):
-        score = model.similarity([query_features], [document['features']])[0][0]
-        scores.append((document, score))
-    scores.sort(key=lambda x: x[1], reverse=True)
-    return scores[:top_k]
+        return self.embedding_model.encode(text)
+    
+    def process_query(self, query):
+        """Preprocess the query and generate SBERT embeddings."""
+        query_features = self.extract_features(query).tolist()
 
-def chunk_text(text, chunk_size=100, overlap=50):
-    """Chunk the text into overlapping windows."""
-    words = text.split()
-    chunks = []
-    for i in range(0, len(words), chunk_size - overlap):
-        chunk = ' '.join(words[i:i + chunk_size])
-        chunks.append(chunk)
-        if i + chunk_size >= len(words):
-            break
-    return chunks
+        return query_features
+    
+    def chunk_text(self, text, chunk_size=100, overlap=50):
+        """Chunk the text into overlapping windows."""
+        words = text.split()
+        chunks = []
+        for i in range(0, len(words), chunk_size - overlap):
+            chunk = ' '.join(words[i:i + chunk_size])
+            chunks.append(chunk)
+            if i + chunk_size >= len(words):
+                break
 
-def extract_relevant_part(query, content, model, chunk_size=32, overlap=4):
-    """Extract the part of the content that is most relevant to the query."""
-    chunks = chunk_text(content, chunk_size, overlap)
-    if not chunks:
-        return content  # Return full content if it can't be split
+        return chunks
+    
+    def extract_relevant_part(self, query, content, chunk_size=32, overlap=4):
+        """Extract the part of the content that is most relevant to the query."""
+        chunks = self.chunk_text(content, chunk_size, overlap)
+        if not chunks:
+            return content  # Return full content if it can't be split
 
-    chunk_embeddings = model.encode(chunks)
-    query_embedding = extract_features(query, model)
-    scores = model.similarity([query_embedding], chunk_embeddings).flatten()
-    best_chunk_idx = scores.argmax()
-    return chunks[best_chunk_idx]
+        chunk_embeddings = self.embedding_model.encode(chunks)
+        query_embedding = self.extract_features(query)
+        scores = self.embedding_model.similarity([query_embedding], chunk_embeddings).flatten()
+        best_chunk_idx = scores.argmax()
+
+        return chunks[best_chunk_idx]
+    
+    def search(self, query, documents, top_k=5):
+        """
+        Dense search for the most relevant documents to the query.
+        Similarity score => cosine similarity. 
+        """
+        print('SEARCHING...')
+        query_features = self.process_query(query)
+        scores = []
+        for document in tqdm(documents, total=len(documents)):
+            score = self.embedding_model.similarity([query_features], [document['features']])[0][0]
+            scores.append((document, score))
+        scores.sort(key=lambda x: x[1], reverse=True)
+
+        return scores[:top_k]
 
 
 def load_documents(file_path):
@@ -164,16 +181,19 @@ def main(
     extract_content, 
     topk=5, 
     web_search=False, 
-    search_engine=None
+    search_engine='perplexity',
+    dense_searcher=None
 ):
     RED = "\033[31m"
     RESET = "\033[0m"
-    # Perform search.
-    if web_search:
+
+    if web_search: # Perform search.
         results = do_web_search(query=query, search_engine=search_engine)
         return results
-    else:
-        results = search(query, documents, model, topk)
+    else: # Perform dense similrity search.
+        if dense_searcher is None:
+            dense_searcher = DenseSearch(model)
+        results = dense_searcher.search(query, documents, topk)
     
     relevant_parts = []
     retrieved_docs = []
@@ -193,7 +213,7 @@ def main(
                 f"remove `--extract-content` while executing the search script"
                 )
             
-            relevant_part = extract_relevant_part(query, document['content'], model)
+            relevant_part = dense_searcher.extract_relevant_part(query, document['content'])
             relevant_parts.append(relevant_part)
             # Few color modifications to make the output more legible.
             document['content'] = document['content'].replace(relevant_part, f"{RED}{relevant_part}{RESET}")
@@ -242,6 +262,9 @@ if __name__ == '__main__':
             tokenizer=tokenizer, skip_prompt=True, skip_special_tokens=True
         )
 
+    # Load dense search engine.
+    dense_searcher = DenseSearch(embedding_model=embedding_model)
+
     # Keep on asking the user prompt until the user exits.
     while True:
         query = input(f"\n{RED}Enter your search query:{RESET} ")
@@ -251,7 +274,8 @@ if __name__ == '__main__':
             embedding_model, 
             extract_content, 
             topk, 
-            web_search=args.web_search
+            web_search=args.web_search,
+            dense_searcher=dense_searcher
         )
     
         if args.llm_call:
