@@ -10,15 +10,10 @@ import argparse
 import torch
 import os
 
-from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 from llm import generate_next_tokens
-from transformers import (
-    AutoModelForCausalLM, 
-    AutoTokenizer, 
-    BitsAndBytesConfig
-)
 from utils.general import MyTextStreamer
+from utils.load_models import load_embedding_model, load_llm
 from dotenv import load_dotenv
 from tavily import TavilyClient
 from perplexity import Perplexity
@@ -65,11 +60,6 @@ def parser_opt():
     )
     args = parser.parse_args()
     return args
-
-def load_embedding_model(model_id=None):
-    # Load SBERT model
-    model = SentenceTransformer(model_id)
-    return model
 
 class DenseSearch():
     """
@@ -245,19 +235,7 @@ if __name__ == '__main__':
 
     # Load the LLM only when if `args.llm` has been passed by user.
     if args.llm_call:
-        quant_config = BitsAndBytesConfig(
-            load_in_4bit=True
-        )
-
-        tokenizer = AutoTokenizer.from_pretrained(
-            model_id, trust_remote_code=True
-        )
-        llm_model = AutoModelForCausalLM.from_pretrained(
-            model_id,
-            quantization_config=quant_config,
-            device_map=device,
-            trust_remote_code=True
-        )
+        llm_model, tokenizer = load_llm(model_id=model_id, device=device)
         streamer = MyTextStreamer(
             tokenizer=tokenizer, skip_prompt=True, skip_special_tokens=True
         )

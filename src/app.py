@@ -57,7 +57,7 @@ def load_llm(chat_model_id, fp16):
     global processor
 
     # Forcing floating point 16 precision for Phi-4 Multimodal as it does not
-    # spport bnb qunat yet.
+    # support BnB quant yet.
     if chat_model_id == 'microsoft/Phi-4-multimodal-instruct':
         fp16 = True
 
