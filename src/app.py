@@ -13,7 +13,7 @@ from transformers import (
     AutoProcessor
 )
 from sentence_transformers import SentenceTransformer
-from search import load_documents, DenseSearch
+from search import load_documents, DenseSearch, BM25Search
 from search import main as search_main
 from create_embeddings import load_and_preprocess_text_files
 from utils.app_utils import (
@@ -49,6 +49,7 @@ processor = None
 web_search = False
 search_engine = None
 dense_searcher = None
+bm25_searcher = None
 
 def load_llm(chat_model_id, fp16):
     global model
@@ -141,13 +142,11 @@ def generate_next_tokens(
     global model_id
     global embed_model_id
     global dense_searcher
+    global bm25_searcher
 
     if embedding_model_id != embed_model_id:
         load_embedding_model(embedding_model_id)
         embed_model_id = embedding_model_id
-
-    if dense_searcher is None:
-        dense_searcher = DenseSearch(embedding_model=embedding_model)
 
     # If a new PDF file is uploaded, create embeddings, store in `temp.json`
     # and load the embedding file.
@@ -266,6 +265,11 @@ def generate_next_tokens(
     final_input = ''
     user_text = user_input['text']
 
+    if dense_searcher is None:
+        dense_searcher = DenseSearch(embedding_model=embedding_model)
+
+    if bm25_searcher is None and documents is not None: # BM25 search happens only on indexed documents.
+        bm25_searcher = BM25Search(documents=documents)
 
     if len(images) != 0:
         context = ''
@@ -296,7 +300,8 @@ def generate_next_tokens(
                 extract_content=True,
                 web_search=web_search,
                 search_engine=search_engine,
-                dense_searcher=dense_searcher
+                dense_searcher=dense_searcher,
+                bm25_searcher=bm25_searcher
             )
         if documents is not None:
             # TODO
@@ -307,7 +312,8 @@ def generate_next_tokens(
                 embedding_model,
                 extract_content=True,
                 topk=int(num_chunks_to_retrieve),
-                dense_searcher=dense_searcher
+                dense_searcher=dense_searcher,
+                bm25_searcher=bm25_searcher
             )
         context = '\n\n'.join(context_list)
         # final_input += user_text + '\n' + 'Answer the above question based on the following context. If the context is empty, then just chat normally:\nCONTEXT:\n' + context

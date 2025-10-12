@@ -9,6 +9,7 @@ import json
 import argparse
 import torch
 import os
+import bm25s
 
 from tqdm import tqdm
 from llm import generate_next_tokens
@@ -17,6 +18,7 @@ from utils.load_models import load_embedding_model, load_llm
 from dotenv import load_dotenv
 from tavily import TavilyClient
 from perplexity import Perplexity
+from typing import Union, List
 
 load_dotenv()
 
@@ -111,6 +113,7 @@ class DenseSearch():
         Dense search for the most relevant documents to the query.
         Similarity score => cosine similarity. 
         """
+        # print(f"Document contains {len(documents)} chunks")
         print('SEARCHING...')
         query_features = self.process_query(query)
         scores = []
@@ -120,6 +123,56 @@ class DenseSearch():
         scores.sort(key=lambda x: x[1], reverse=True)
 
         return scores[:top_k]
+
+class BM25Search():
+    """
+    Simple BM25 implementation.
+    """
+
+    def __init__(self, documents):
+        self.corpus = [document['content'] for document in documents]
+
+    def tokenize(self, text: List[str]):
+        """
+        Tokenize corpus using BM25.
+
+        :param corpus: A list containing string of documents. 
+            Example 1: ["document 1"], Example 2: ["document 1", "document 2"]
+        
+        Returns: Tokenized document.
+        """
+        tokens = bm25s.tokenize(text)
+
+        return tokens
+    
+    def retrieve(self, query, corpus=None, top_k=5):
+        """
+        Retrieve the top documents based on BM25 score.
+        """
+        # corpus_tokens = self.tokenize(corpus)
+        # query_tokens = self.tokenize(query)
+
+        # retriever = bm25s.BM25(corpus=corpus)
+        # # Index the corpus.
+        # retriever.index(corpus_tokens)
+
+        # results, scores = retriever.retrieve(query_tokens=query_tokens, k=1)
+        # print(results, scores)
+        corpus_tokens = self.tokenize(self.corpus)
+        query_tokens = self.tokenize(query)
+
+        retriever = bm25s.BM25(corpus=self.corpus)
+        # Index the corpus.
+        retriever.index(corpus_tokens)
+
+        results, scores = retriever.retrieve(query_tokens=query_tokens, k=top_k)
+        # print('\n\n Result \n\n')
+        # print(results, scores)
+        results_scores = []
+        for result, score in zip(results[0], scores[0]):
+            results_scores.append((result, score))
+        
+        return results_scores
 
 
 def load_documents(file_path):
@@ -172,7 +225,8 @@ def main(
     topk=5, 
     web_search=False, 
     search_engine='perplexity',
-    dense_searcher=None
+    dense_searcher=None,
+    bm25_searcher=None
 ):
     RED = "\033[31m"
     RESET = "\033[0m"
@@ -180,21 +234,26 @@ def main(
     if web_search: # Perform search.
         results = do_web_search(query=query, search_engine=search_engine)
         return results
-    else: # Perform dense similrity search.
+    else: # Perform dense and BM25 similrity search.
         if dense_searcher is None:
             dense_searcher = DenseSearch(model)
+        if bm25_searcher is None:
+            bm25_searcher = BM25Search(documents)
+    
         results = dense_searcher.search(query, documents, topk)
+        results_bm25 = bm25_searcher.retrieve(query=query, top_k=topk)
     
     relevant_parts = []
     retrieved_docs = []
-    for result in results:
-        document = result[0]
+    for result, result_bm25 in zip(results, results_bm25):
+        document, document_bm25 = result[0], result_bm25[0]
         print(f"Filename: {result[0]['filename']}, Score: {result[1]}")
         # Search for relevevant content if `--extract-content` is passed.
         if extract_content:
             try:
                 document['content']
                 retrieved_docs.append(document['content'])
+                retrieved_docs.append(document_bm25)
             except:
                 raise AssertionError(f"It looks like you have passed "
                 f"`--extract-content` but the document does not contain "
@@ -209,9 +268,17 @@ def main(
             document['content'] = document['content'].replace(relevant_part, f"{RED}{relevant_part}{RESET}")
             print(f"Retrieved document: {document['content']}\n")
 
+    print('RETRIEVED DOCS: ', retrieved_docs)
+    print('Number of RETRIVED DOCS: ', len(retrieved_docs))
     return retrieved_docs
 
 if __name__ == '__main__':
+    # args = parser_opt()
+    # documents = load_documents(args.index_file)
+    # bm25_searcher = BM25Search(documents)
+    # bm25_searcher.retrieve(query='What is TRM?')
+    # exit(0)
+
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model_id = 'microsoft/Phi-4-mini-instruct'
 
@@ -242,6 +309,8 @@ if __name__ == '__main__':
 
     # Load dense search engine.
     dense_searcher = DenseSearch(embedding_model=embedding_model)
+    # Load BM25 search.
+    bm25_searcher = BM25Search(documents)
 
     # Keep on asking the user prompt until the user exits.
     while True:
@@ -253,7 +322,8 @@ if __name__ == '__main__':
             extract_content, 
             topk, 
             web_search=args.web_search,
-            dense_searcher=dense_searcher
+            dense_searcher=dense_searcher,
+            bm25_searcher=bm25_searcher
         )
     
         if args.llm_call:
