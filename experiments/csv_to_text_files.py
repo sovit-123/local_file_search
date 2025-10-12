@@ -1,5 +1,5 @@
 """
-Script to conver the Enron email dataset CSV content to text files.
+Script to convert the Enron email dataset CSV content to text files.
 """
 
 import os
