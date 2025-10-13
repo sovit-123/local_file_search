@@ -18,7 +18,7 @@ from utils.load_models import load_embedding_model, load_llm
 from dotenv import load_dotenv
 from tavily import TavilyClient
 from perplexity import Perplexity
-from typing import Union, List
+from typing import List
 
 load_dotenv()
 
@@ -113,7 +113,6 @@ class DenseSearch():
         Dense search for the most relevant documents to the query.
         Similarity score => cosine similarity. 
         """
-        # print(f"Document contains {len(documents)} chunks")
         print('SEARCHING...')
         query_features = self.process_query(query)
         scores = []
@@ -145,19 +144,10 @@ class BM25Search():
 
         return tokens
     
-    def retrieve(self, query, corpus=None, top_k=5):
+    def retrieve(self, query, top_k=5):
         """
         Retrieve the top documents based on BM25 score.
         """
-        # corpus_tokens = self.tokenize(corpus)
-        # query_tokens = self.tokenize(query)
-
-        # retriever = bm25s.BM25(corpus=corpus)
-        # # Index the corpus.
-        # retriever.index(corpus_tokens)
-
-        # results, scores = retriever.retrieve(query_tokens=query_tokens, k=1)
-        # print(results, scores)
         corpus_tokens = self.tokenize(self.corpus)
         query_tokens = self.tokenize(query)
 
