@@ -73,7 +73,6 @@ def load_llm(chat_model_id, fp16):
     processor = AutoProcessor.from_pretrained(
         chat_model_id, 
         trust_remote_code=True, 
-        num_crops=4
     ) 
     tokenizer = AutoTokenizer.from_pretrained(
         chat_model_id, 
@@ -86,7 +85,7 @@ def load_llm(chat_model_id, fp16):
         device_map=device,
         trust_remote_code=True,
         _attn_implementation='flash_attention_2', # 'eager' for older GPUs like T4, P100
-        torch_dtype='auto'
+        torch_dtype=torch.bfloat16 if not fp16 else torch.float16
     )
 
     streamer = TextIteratorStreamer(
