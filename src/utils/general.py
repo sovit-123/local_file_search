@@ -37,3 +37,19 @@ def download_arxiv_doc(url):
         f.write(response.content)
 
     return download_path
+
+def download_md(url):
+    download_dir = os.path.join('..', 'data', 'downloaded_md')
+
+    os.makedirs(download_dir, exist_ok=True)
+
+    name = url.split('/')[-1]
+
+    download_path = os.path.join(download_dir, name+'.md')
+
+    response = requests.get(url+'.md')
+
+    with open(download_path, 'wb') as f:
+        f.write(response.content)
+
+    return download_path
