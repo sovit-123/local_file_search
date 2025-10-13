@@ -524,9 +524,8 @@ def main():
             key='perplexity'
         )
 
-        # Text box to display retrieved context.
         arxiv_link_box = gr.Text(
-            label='Paste Arxiv Link or HF Model Docs Link (takes precedence)',
+            label='Paste Arxiv Paper Link or HF Transformers Docs Link [https://huggingface.co/docs/transformers/] (takes precedence)',
             render=False
         )
 
