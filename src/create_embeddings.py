@@ -91,6 +91,11 @@ def file_reader(filename):
             all_text += page.extract_text() + ' '
         
         return all_text
+    
+    elif filename.endswith('.md'):
+        with open(os.path.join(filename), 'r', encoding='utf-8') as file:
+            content = file.read()
+            return content
 
 def extract_features(text, model):
     """
