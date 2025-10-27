@@ -16,6 +16,8 @@ Before moving forward with any of the installation steps, ensure that you have C
 
 ### Ubuntu
 
+#### RTX 30/40 (Ampere and Ada Lovelace) series and T4/P100 GPUs
+
 Run the following in terminal in your preferred virtual/conda environment.
 
 ```
@@ -24,7 +26,23 @@ sh setup.sh
 
 It will install the the requirements from the `requirements.txt` file.
 
+#### RTX 50 series and Blackwell GPUs. First install PyTorch >= 2.8 with CUDA >= 12.9
+
+Install PyTorch >= 2.8 with CUDA >= 12.9
+
+```
+pip install torch==2.8.0 torchvision==0.23.0 torchaudio==2.8.0 --index-url https://download.pytorch.org/whl/cu129
+```
+
+Install rest of the requirements.
+
+```
+pip install -r requirements_blackwell.txt
+```
+
 ### Windows
+
+#### RTX 30/40 (Ampere and Ada Lovelace) series and T4/P100 GPUs
 
 Install the required version of PyTorch first, preferably the latest stable supported by this repository. This is a necessary step to build Flash Attention correctly on Windows.
 
@@ -36,6 +54,20 @@ Next install rest of the requirements.
 
 ```
 pip install -r requirements.txt
+```
+
+#### RTX 50 series and Blackwell GPUs. First install PyTorch >= 2.8 with CUDA >= 12.9
+
+Install PyTorch >= 2.8 with CUDA >= 12.9
+
+```
+pip install torch==2.8.0 torchvision==0.23.0 torchaudio==2.8.0 --index-url https://download.pytorch.org/whl/cu129
+```
+
+Install rest of the requirements.
+
+```
+pip install -r requirements_blackwell.txt
 ```
 
 ## Updates
