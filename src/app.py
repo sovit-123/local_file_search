@@ -19,7 +19,7 @@ from create_embeddings import load_and_preprocess_text_files
 from utils.app_utils import (
     load_and_preprocess_images, load_and_process_videos
 )
-from utils.general import download_arxiv_doc, download_md
+from utils.general import download_arxiv_doc, download_md, download_wiki_doc
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -172,11 +172,31 @@ def generate_next_tokens(
             
             documents = load_documents(os.path.join('..', 'data', 'temp.json'))
         elif 'huggingface.co/docs/transformers' in arxiv_link:
+            # The variable is `arxiv_link` because we use the same text box.
             hf_doc_path = download_md(arxiv_link)
             print(hf_doc_path)
             results = load_and_preprocess_text_files(
                 results,
                 hf_doc_path,
+                add_file_content=True,
+                chunk_size=int(chunk_size),
+                overlap=int(overlap),
+                model=embedding_model
+            )
+
+            embedded_docs = [result for result in results]
+            # Save documents with embeddings to a JSON file.
+            with open(os.path.join('..', 'data', 'temp.json'), 'w') as f:
+                json.dump(embedded_docs, f)
+
+            documents = load_documents(os.path.join('..', 'data', 'temp.json'))
+        elif 'wikipedia.org' in arxiv_link:
+            # The variable is `arxiv_link` because we use the same text box.
+            wiki_doc_path = download_wiki_doc(arxiv_link)
+            print(wiki_doc_path)
+            results = load_and_preprocess_text_files(
+                results,
+                wiki_doc_path,
                 add_file_content=True,
                 chunk_size=int(chunk_size),
                 overlap=int(overlap),
@@ -525,7 +545,9 @@ def main():
         )
 
         arxiv_link_box = gr.Text(
-            label='Paste Arxiv Paper Link or HF Transformers Docs Link [https://huggingface.co/docs/transformers/] (takes precedence)',
+            label='Paste Arxiv Paper Link or ' \
+                'HF Transformers Docs Link [https://huggingface.co/docs/transformers/] or ' \
+                'any wikipedia.org link (takes precedence)',
             render=False
         )
 
