@@ -1,5 +1,7 @@
 # Local File Search using Embeddings
 
+![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)
+
 Scripts to replicate simple file search and RAG in a directory with embeddings and Language Models.
 
 From scratch implementation, ***no Vector DBs yet.***
