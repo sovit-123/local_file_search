@@ -545,7 +545,9 @@ def main():
         )
 
         arxiv_link_box = gr.Text(
-            label='Paste Arxiv Paper Link or HF Transformers Docs Link [https://huggingface.co/docs/transformers/] (takes precedence)',
+            label='Paste Arxiv Paper Link or ' \
+                'HF Transformers Docs Link [https://huggingface.co/docs/transformers/] or ' \
+                'any wikipedia.org link (takes precedence)',
             render=False
         )
 
